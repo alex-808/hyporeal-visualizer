@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spotify Web Playback SDK Quick Start Tutorial</title>
+</head>
+<body>
+  <h1>Spotify Web Playback SDK Quick Start Tutorial</h1>
+  <h2>Open your console log: <code>View > Developer > JavaScript Console</code></h2>
+  <button id="toggle-button">Pause/Resume</button>
+  <p id="timer"></p>
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  
+  <script>
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      var trackPosition
+      var initialMilliseconds
+      var initialDate
+      var id
+      var elapsedMilliseconds
+      var elapsedDate
+      var elapsedTime = 0
+      var toggle = false
+
+      function timerControl(paused) {
+        
+        if (paused === false && toggle === false) {
+          startTimer()
+        }
+        else if (paused === true && toggle === true) {
+          stopTimer()
+        }
+          
+        }
+    
+
+      function startTimer () {
+        toggle = true
+        initialDate = new Date();
+        initialMilliseconds = initialDate.getTime()
+        id = setInterval(() => {
+            elapsedDate = new Date();
+            elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
+            //console.log(elapsedMilliseconds)
+        }, 1);
+      }
+
+        function stopTimer () {
+          if (toggle === true) {
+          clearInterval(id)
+          elapsedTime += elapsedMilliseconds
+          toggle = false
+
+          }
+          console.log("Elapsed time:", elapsedTime)
+        }
+
+      const token = 'BQAt4jg7EAKBwKzGHFkIUqGlhz4dDlPg_DAGk8O6SRoCWr48jQTJaQ9iNiepS_bdtcHdjS6OWj5k62ODEKGsummKjofENXNksKGMOE2UDbV50YBRQoUIbTsdr2ebvPRBvHiq7z5YTgl7sLsepcWZP8W7ZopfaGONdg';
+      const player = new Spotify.Player({
+        name: 'Web Playback SDK Quick Start Player',
+        getOAuthToken: cb => { cb(token); }
+      });
+
+      // Error handling
+      player.addListener('initialization_error', ({ message }) => { console.error(message); });
+      player.addListener('authentication_error', ({ message }) => { console.error(message); });
+      player.addListener('account_error', ({ message }) => { console.error(message); });
+      player.addListener('playback_error', ({ message }) => { console.error(message); });
+
+      // Playback status updates
+        player.addListener('player_state_changed', state => { 
+          //console.log("State paused", state['paused'])
+          console.log("Position:", state['position'])
+          trackPosition = state['position']
+          //console.log(state)
+          timerControl(state['paused'])
+          fetch('./', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(state),
+            })
+            .then(res => res.json())
+            .then(data => {
+              //console.log(data['energy'])
+            })
+
+
+      });
+
+      // Ready
+      player.addListener('ready', ({ device_id }) => {
+        console.log('Ready with Device ID', device_id);
+      });
+
+      // Not Ready
+      player.addListener('not_ready', ({ device_id }) => {
+        console.log('Device ID has gone offline', device_id);
+      });
+
+      // Connect to the player!
+      player.connect();
+
+      //Pause
+      document.getElementById('toggle-button').addEventListener('click', function() {
+        player.togglePlay().then(() => {
+        console.log('Toggled!');
+
+      });
+      });
+
+    };
+
+
+      
+  </script>
+</body>
+</html>
