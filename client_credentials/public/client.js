@@ -10,16 +10,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var toggle = false
     var i = 0
     var array = [1.1, 2.5, 3.7]
-
+    var syncCompensation = 500
+    var image = document.querySelector('h1')
+    var imageToggle = true;
     function timerControl(paused) {
 
       
       if (paused === false && toggle === false) {
-        console.log("Start track position", trackPosition)
+        //console.log("Start track position", trackPosition)
         startTimer()
       }
       else if (paused === true && toggle === true) {
-        console.log("Stop track position", trackPosition)
+        //console.log("Stop track position", trackPosition)
 
         stopTimer()
       }
@@ -32,26 +34,39 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       toggle = true
       initialDate = new Date();
       initialMilliseconds = initialDate.getTime()
+      console.log("Start timer")
+      console.log(trackData)
       id = setInterval(() => {
           elapsedDate = new Date();
           elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
-          //if (elapsedMilliseconds === ) {
+          if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[i] - syncCompensation && elapsedTime + elapsedMilliseconds <= trackData.beatsStart[i])
+          {
+            if (imageToggle === true) {
+              imageToggle = false
+              image.style.color = "red"
+            }
+            else {
+              imageToggle = true
+              image.style.color = "blue"
+            }
 
-          //}
-
+            i++
+          }
       }, 1);
     }
 
       function stopTimer () {
+        console.log("Stop timer")
+        console.log(trackData)
         clearInterval(id)
-        console.log("Elapsed milis", elapsedMilliseconds)
+        //console.log("Elapsed milis", elapsedMilliseconds)
         elapsedTime += elapsedMilliseconds
         toggle = false
-        console.log("Elapsed time:", elapsedTime)
+        //console.log("Elapsed time:", elapsedTime)
         console.log("Difference", trackPosition - elapsedTime)
       }
 
-    const token = 'BQA7-UlXr4R95AgYcKhDdb9thV4ysR0Irb6jA7806kQtFW-zSx4BZ2B_KIng-ezWoRqEjs96KUUKmMSIi2cm0ysgafnvhygT8_cKCshT-YL_PUT03JEt1hbzPCf1SdfWA10QS2-Ojk9K1yN2JCKZ9iGSJnPGwE3Hpg';
+    const token = 'BQDv3o53v8wYuSU3BNMEuk6viteQXLh4F4h0gEy-LTkVblZohrVW2RSZRxhXA0BsVfBmDbmLTCqB70Mumd0pQ3caoiwcw12hYgiRDodNTaIoa3gyrGecpUDarPV_rxKrWqk6_gFAYMFjo8S5Fp-J7zEkhhD6RWQvZg';
     const player = new Spotify.Player({
       name: 'Web Playback SDK Quick Start Player',
       getOAuthToken: cb => { cb(token); }
@@ -70,8 +85,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // Playback status updates
       player.addListener('player_state_changed', state => { 
         console.log("State change")
-        trackPosition = state['position']
-        timerControl(state['paused'])
         current_track_id = state['track_window']['current_track']['id']
 
         if (current_track_id !== stored_track_id) {
@@ -90,13 +103,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             .then(res => res.json())
             .then(data => {
               trackData = new songData(data)
-              //console.log(trackData, "1")
               return trackData
             })
             .then(trackData => console.log(trackData))
+            .then(timerControl(state['paused']))
         }
         else {
+          trackPosition = state['position']
 
+
+          timerControl(state['paused'])
         }
     });
 
@@ -112,6 +128,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         this.tatumsStart = []
         for (let i = 0; i < this.tatums.length; i++) {
           this.tatumsStart[i] = parseFloat((this.tatums[i]['start'] * 1000).toFixed(2))
+        }
+        this.beatsStart = []
+        for (let i = 0; i < this.beats.length; i++) {
+          this.beatsStart[i] = parseFloat((this.beats[i]['start'] * 1000).toFixed(2))
         }
       }
 
