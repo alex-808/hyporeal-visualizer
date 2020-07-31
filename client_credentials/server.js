@@ -11,30 +11,24 @@ var app = express();
 
 app.use(express.json())
 
+app.use(express.static('public'))
+
 app.get('/', function(req, res) {
+  
   res.sendFile(path.join(__dirname, '/public', 'index.html'));
 })
 
-var stored_track_id;
-
+var testJSON = {
+  "this":"that"
+}
 
 app.post('/', function(req, res)  {
-//the problem is that for some reason the callback function is resolving before the API_call has completed
-//need to look into async await
   var current_track_id = req.body['track_window']['current_track']['id']
-  //console.log("Current:", current_track_id);
-  //console.log("Stored", stored_track_id)
-  if(current_track_id !== stored_track_id || API_data === undefined) {
-    stored_track_id = current_track_id;
-    console.log("Stored track replaced")
-    console.log("New Stored:", stored_track_id)
-    API_data = API_call(stored_track_id);
-    console.log("API data:", API_data);
-
-
-  }
-
-  res.send(API_data)
+    API_call(current_track_id)
+    .then(data => res.send(data))
+    //.then( => res.send(API_data));
+    //console.log(testJSON)
+    //res.send(testJSON)
 })
 
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
@@ -44,11 +38,11 @@ var client_id = '***REMOVED***'; // Your client id
 var client_secret = '***REMOVED***'; // Your secret
 
 var audio_analysis;
-var x;
 
 
 function API_call(track_id) {
   // your application requests authorization
+  return new Promise ((resolve, reject) => {
 
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
@@ -64,7 +58,6 @@ function API_call(track_id) {
   //when you post authOptions, this callback function runs
   request.post(authOptions, function(error, response, body) {
     if (!error && response.statusCode === 200) {
-      x = 2
       // use the access token to access the Spotify Web API
       var token = body.access_token;
       var options = {
@@ -74,12 +67,17 @@ function API_call(track_id) {
         },
         json: true
       };
-    
+        console.log("Post request complete")
       request.get(options, function(error, response, body) {
         audio_analysis = body;
+        resolve(audio_analysis)
+        console.log("Get request complete")
       });
     }
 
   });
-  return audio_analysis;
+  //we need to wait to return audio_analysis until request.get has fully executed
+  //return a promise?
+
+})
 }
