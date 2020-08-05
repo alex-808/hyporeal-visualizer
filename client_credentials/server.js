@@ -71,6 +71,7 @@ function API_call(track_id) {
       request.get(options, function(error, response, body) {
         audio_analysis = body;
         resolve(audio_analysis)
+        //console.log(audio_analysis)
         console.log("Get request complete")
       });
     }
