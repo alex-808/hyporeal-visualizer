@@ -33,12 +33,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
   var backRowAnimation = [0,0,0,0,0,0,0,0,0,0,0,0]
   var storedBackRow = [0,0,0,0,0,0,0,0,0,0,0,0]
+  var beatAnimation = 0
 
 
   for(i = 0; i < dimension; i++) {
     plane.geometry.vertices[i].z = .5
   }
-
+  console.log(camera.position.x)
   var animate = function () {
     requestAnimationFrame( animate );
 
@@ -48,6 +49,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         //var random = (Math.random() * 2 - 1) * .01
         //plane.geometry.vertices[i].z += random
         plane.geometry.vertices[i].z = storedBackRow[i]
+
         //plane.geometry.vertices[rowVertices].z = .2
         //plane.geometry.vertices[rowVertices].z = plane.geometry.vertices[rowVertices-dimension].z
       }
@@ -62,9 +64,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   }
     plane.geometry.verticesNeedUpdate = true
 
-    
-
-
     //console.log(backRowAnimation)
   var rowVertices = 143
   var columnVertices = 131
@@ -74,6 +73,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     for(rowVertices; rowVertices > columnVertices; rowVertices--) {
 
       plane.geometry.vertices[rowVertices].z = plane.geometry.vertices[rowVertices - dimension].z
+      //plane.geometry.vertices[rowVertices].y += beatAnimation * 0.01
   
     }
   }
@@ -92,14 +92,42 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var elapsedDate
     var elapsedTime = 0
     var toggle = false
-    var counter = 0
-    var syncCompensation = 500
+    var segmentCounter = 0
+    var syncCompensation = 0
+    var beatCounter = 0
 
 
     function timerControl(paused) {
 
+      elapsedTime = trackPosition
+      var i = 0
+      var truthCond = true
+      console.log("New call")
+      while(truthCond === true && i < trackData.segmentsStart.length) {
+        if (trackData.segmentsStart[i] > trackPosition) {
+          segmentCounter = i
+          console.log("segmentCounter", segmentCounter)
+          truthCond = false;
+        }
+        i++
+      }
+
+      i = 0
+      truthCond = true
+
+      while(truthCond === true && i < trackData.beatsStart.length) {
+        if (trackData.beatsStart[i] > trackPosition) {
+          beatCounter = i
+          console.log("beatCounter", beatCounter)
+          truthCond = false;
+        }
+        i++
+      }
+
+
       if (paused === false && toggle === false) {
         //console.log("Start track position", trackPosition)
+
         startTimer()
       }
       else if (paused === true && toggle === true) {
@@ -112,45 +140,49 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   
 
     function startTimer () {
-      elapsedTime = trackPosition
+
+      //console.log("Start timer elapsed time", elapsedTime)
       toggle = true
       initialDate = new Date();
       initialMilliseconds = initialDate.getTime()
       console.log("Start timer")
+
       //console.log(trackData)
+
       id = setInterval(() => {
+        //console.log("Running")
           elapsedDate = new Date();
           elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
           //Need to resolve why only the segmentStart or beatStart are being evaluated
           //it's because we immediately increment i because segmentstart goes first
           //this pushes i back more and more
-          /*
-         if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[i] - syncCompensation && elapsedTime + elapsedMilliseconds <= trackData.beatsStart[i])
+          
+         if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[beatCounter] - syncCompensation)
           {
-            console.log("Beat")
-            if(rectToggle === true) {
-              x = 0
-              rectToggle = false
-              console.log(rectToggle)
+            
+            if (beatAnimation === -1) {
+              console.log("Beat")
+              beatAnimation = 1
+              console.log(beatAnimation)
             }
             else {
-              x = 200
-              rectToggle = true
-              console.log(rectToggle)
+              beatAnimation = -1
+              console.log("Boop")
             }
-            i++
+            beatCounter++
           }
-                   */
+                   
          //console.log("elapsedTime + elapsedMilliseconds", elapsedTime + elapsedMilliseconds)
          //console.log("segmentStart", trackData.segmentsStart[i])
         
-         if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[counter] - syncCompensation) {
-          backRowAnimation = trackData.segments[counter]['pitches']
-          //console.log(trackData.segmentsStart[counter])
+         if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
+          backRowAnimation = trackData.segments[segmentCounter]['pitches']
+          //console.log(trackData.segmentsStart[segmentCounter])
           //console.log(backRowAnimation)
-          //console.log(i)
 
-          counter++
+
+          segmentCounter++
+          //console.log("Segment hit", segmentCounter)
          }
 
       }, 1);
@@ -161,13 +193,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         //console.log(trackData)
         clearInterval(id)
         //console.log("Elapsed milis", elapsedMilliseconds)
+        //console.log("Stop Timer Elapsed time:", elapsedTime)
         elapsedTime += elapsedMilliseconds
         toggle = false
-        //console.log("Elapsed time:", elapsedTime)
-        console.log("Difference", trackPosition - elapsedTime)
+        //console.log("Stop timer Elapsed millis", elapsedMilliseconds)
+        //console.log("Stop timer trackPosition", trackPosition)
+
+        //console.log("Difference", trackPosition - elapsedTime)
       }
 
-    const token = 'BQDuwR9BQrQ-Ges8AFe90d-KrmChtdsWxlCBR_tll2kv7vSkGJ6_oELPZEpB8dtwP5k61qdyHuQ-YGbW-GCmGFbSZNy6wndEeQcrPqquNJrhr4YBzO-t1umD5mNn4itmDZAnd_kgZkMW3FgEJufcY5tn11CRqXmxIg';
+    const token = 'BQBQwxHz_lojqkXg1Gugp4afNRlgMum5U3UyChh5TEFWJUap0yh8s38veEgqU5DwHTeSwxpuUYJsPqrEpS8mptL6HxWOvS44PsBr7nW80WcloF4jszDTZZKW42pet9jrWlphHs3OXFtPQMbeFc4JTEpJoG7b1QU5IQ';
     const player = new Spotify.Player({
       name: 'Web Playback SDK Quick Start Player',
       getOAuthToken: cb => { cb(token); }
@@ -186,15 +221,21 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // Playback status updates
       player.addListener('player_state_changed', state => { 
         //console.log("State change")
+        segmentCounter = 0
+        beatCounter = 0
         current_track_id = state['track_window']['current_track']['id']
+        //console.log("State position", state['position'])
         trackPosition = state['position']
-        console.log("New track position", trackPosition)
-        console.log("Elapsed time", elapsedTime)
+        //console.log("Track position", trackPosition)
         if (current_track_id !== stored_track_id) {
-          i = 0
+
+          trackPosition = 0
+          elapsedMilliseconds = 0
+          stopTimer()
           stored_track_id = current_track_id
 
           console.log('New track detected:', stored_track_id)
+          console.log("Track position", trackPosition)
 
           fetch('./', {
             method: 'POST',
