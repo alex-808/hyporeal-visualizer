@@ -2,8 +2,6 @@
 
 window.onSpotifyWebPlaybackSDKReady = () => {
 
-  
-
   var scene = new THREE.Scene();
 
   var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -83,6 +81,17 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   };
 
   animate();
+//////Scene2////////
+/*
+  var scene2 = new THREE.Scene();
+
+  var camera2 = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+  var renderer2 = new THREE.WebGLRenderer({antialias: true});
+
+  renderer2.setSize( window.innerWidth / 2, window.innerHeight / 2 );
+  document.body.appendChild( renderer2.domElement );
+  */
 
     var trackPosition
     var initialMilliseconds
@@ -92,9 +101,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var elapsedDate
     var elapsedTime = 0
     var toggle = false
-    var segmentCounter = 0
     var syncCompensation = 0
+
+    var sectionCounter = 0
+    var barCounter = 0
     var beatCounter = 0
+    var tatumCounter = 0
+    var segmentCounter = 0
+
 
 
     function timerControl(paused) {
@@ -119,6 +133,42 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         if (trackData.beatsStart[i] > trackPosition) {
           beatCounter = i
           console.log("beatCounter", beatCounter)
+          truthCond = false;
+        }
+        i++
+      }
+
+      i = 0
+      truthCond = true
+
+      while(truthCond === true && i < trackData.barsStart.length) {
+        if (trackData.barsStart[i] > trackPosition) {
+          barCounter = i
+          console.log("barCounter", barCounter)
+          truthCond = false;
+        }
+        i++
+      }
+
+      i = 0
+      truthCond = true
+
+      while(truthCond === true && i < trackData.sectionsStart.length) {
+        if (trackData.sectionsStart[i] > trackPosition) {
+          sectionCounter = i
+          console.log("sectionCounter", sectionCounter)
+          truthCond = false;
+        }
+        i++
+      }
+
+      i = 0
+      truthCond = true
+
+      while(truthCond === true && i < trackData.tatumsStart.length) {
+        if (trackData.tatumsStart[i] > trackPosition) {
+          tatumCounter = i
+          console.log("tatumCounter", tatumCounter)
           truthCond = false;
         }
         i++
@@ -174,7 +224,19 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                    
          //console.log("elapsedTime + elapsedMilliseconds", elapsedTime + elapsedMilliseconds)
          //console.log("segmentStart", trackData.segmentsStart[i])
-        
+         if (elapsedTime + elapsedMilliseconds >= trackData.sectionsStart[sectionCounter] - syncCompensation) {
+           sectionCounter++
+           console.log("New section")
+         }
+         if (elapsedTime + elapsedMilliseconds >= trackData.barsStart[barCounter] - syncCompensation) {
+           barCounter++
+           console.log("New bar")
+         }
+         if (elapsedTime + elapsedMilliseconds >= trackData.tatumsStart[tatumCounter] - syncCompensation) {
+           tatumCounter++
+           console.log("New tatum")
+         }
+
          if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
           backRowAnimation = trackData.segments[segmentCounter]['pitches']
           //console.log(trackData.segmentsStart[segmentCounter])
@@ -202,7 +264,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         //console.log("Difference", trackPosition - elapsedTime)
       }
 
-    const token = 'BQBQwxHz_lojqkXg1Gugp4afNRlgMum5U3UyChh5TEFWJUap0yh8s38veEgqU5DwHTeSwxpuUYJsPqrEpS8mptL6HxWOvS44PsBr7nW80WcloF4jszDTZZKW42pet9jrWlphHs3OXFtPQMbeFc4JTEpJoG7b1QU5IQ';
+    const token = 'BQA75SGchsg5l1O3PC7MxEWmtfa7z6CobIH45HZknojVy7XpSMj0-EfxKBLPsnb6UBWvk9uHAuFhq1XkpEyNIkVg5jPLlmAtArdM3TtJaci4vOyP6BLMfH57gLpYRHBzQFYHNG3LNToZmngoDn9Ojj1JAEahgx0M4A';
     const player = new Spotify.Player({
       name: 'Web Playback SDK Quick Start Player',
       getOAuthToken: cb => { cb(token); }
@@ -221,12 +283,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // Playback status updates
       player.addListener('player_state_changed', state => { 
         //console.log("State change")
-        segmentCounter = 0
+        sectionCounter = 0
+        barCounter = 0
         beatCounter = 0
+        tatumCounter = 0
+        segmentCounter = 0
+
         current_track_id = state['track_window']['current_track']['id']
-        //console.log("State position", state['position'])
+
         trackPosition = state['position']
-        //console.log("Track position", trackPosition)
+
         if (current_track_id !== stored_track_id) {
 
           trackPosition = 0
@@ -249,7 +315,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
               trackData = new songData(data)
               return trackData
             })
-            //.then(trackData => console.log(trackData))
+            .then(trackData => console.log(trackData))
             .then(timerControl(state['paused']))
             //.then(animate())
         }
@@ -266,19 +332,33 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         this.sections = rawData['sections']
         this.segments = rawData['segments']
         this.tatums = rawData['tatums']
-        //we need a way to convert all these to millis
+
         this.tatumsStart = []
         for (let i = 0; i < this.tatums.length; i++) {
           this.tatumsStart[i] = parseFloat((this.tatums[i]['start'] * 1000).toFixed(2))
         }
+
         this.beatsStart = []
         for (let i = 0; i < this.beats.length; i++) {
           this.beatsStart[i] = parseFloat((this.beats[i]['start'] * 1000).toFixed(2))
         }
+
         this.segmentsStart = []
         for (let i = 0; i < this.segments.length; i++) {
           this.segmentsStart[i] = parseFloat((this.segments[i]['start'] * 1000).toFixed(2))
         }
+
+
+        this.sectionsStart = []
+        for (let i = 0; i < this.sections.length; i++) {
+          this.sectionsStart[i] = parseFloat((this.sections[i]['start'] * 1000).toFixed(2))
+        }
+
+        this.barsStart = []
+        for (let i = 0; i < this.bars.length; i++) {
+          this.barsStart[i] = parseFloat((this.bars[i]['start'] * 1000).toFixed(2))
+        }
+        
       }
 
     }
