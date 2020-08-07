@@ -109,78 +109,78 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var tatumCounter = 0
     var segmentCounter = 0
 
-
-
-    function timerControl(paused) {
-
-      elapsedTime = trackPosition
+    function findNextDivision (divisionNameStart, divisionCounter, divisionName) {
       var i = 0
       var truthCond = true
-      console.log("New call")
-      while(truthCond === true && i < trackData.segmentsStart.length) {
-        if (trackData.segmentsStart[i] > trackPosition) {
-          segmentCounter = i
-          console.log("segmentCounter", segmentCounter)
+      //console.log("New call")
+      
+      while(truthCond === true && i < divisionNameStart.length) {
+        if (divisionNameStart[i] > trackPosition) {
+          divisionCounter = i
+          //console.log(divisionName + "Counter", divisionCounter)
           truthCond = false;
+          return divisionCounter
         }
         i++
       }
+    }
 
-      i = 0
-      truthCond = true
-
-      while(truthCond === true && i < trackData.beatsStart.length) {
-        if (trackData.beatsStart[i] > trackPosition) {
-          beatCounter = i
-          console.log("beatCounter", beatCounter)
-          truthCond = false;
+        function checkForHits () {
+      if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[beatCounter] - syncCompensation)
+      {
+        console.log("New beat")
+        if (beatAnimation === -1) {
+          //console.log("Beat")
+          beatAnimation = 1
+          //console.log(beatAnimation)
         }
-        i++
-      }
-
-      i = 0
-      truthCond = true
-
-      while(truthCond === true && i < trackData.barsStart.length) {
-        if (trackData.barsStart[i] > trackPosition) {
-          barCounter = i
-          console.log("barCounter", barCounter)
-          truthCond = false;
+        else {
+          beatAnimation = -1
+          //console.log("Boop")
         }
-        i++
+        beatCounter++
       }
+               
+     //console.log("elapsedTime + elapsedMilliseconds", elapsedTime + elapsedMilliseconds)
+     //console.log("segmentStart", trackData.segmentsStart[i])
+     if (elapsedTime + elapsedMilliseconds >= trackData.sectionsStart[sectionCounter] - syncCompensation) {
+       sectionCounter++
+       console.log("New section")
+     }
+     if (elapsedTime + elapsedMilliseconds >= trackData.barsStart[barCounter] - syncCompensation) {
+       barCounter++
+       console.log("New bar")
+     }
+     if (elapsedTime + elapsedMilliseconds >= trackData.tatumsStart[tatumCounter] - syncCompensation) {
+       tatumCounter++
+       console.log("New tatum")
+     }
 
-      i = 0
-      truthCond = true
+     if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
+      backRowAnimation = trackData.segments[segmentCounter]['pitches']
+      //console.log(trackData.segmentsStart[segmentCounter])
+      //console.log(backRowAnimation)
 
-      while(truthCond === true && i < trackData.sectionsStart.length) {
-        if (trackData.sectionsStart[i] > trackPosition) {
-          sectionCounter = i
-          console.log("sectionCounter", sectionCounter)
-          truthCond = false;
-        }
-        i++
-      }
+      segmentCounter++
+      //console.log("Segment hit", segmentCounter)
+     }
+    }
+    function timerControl(paused) {
 
-      i = 0
-      truthCond = true
+ 
+      //segmentCounter = findNextDivision(trackData.segmentsStart, segmentCounter, "segment")
+      
+      //findNextDivision(trackData.tatumsStart, tatumCounter, "tatum")
+      //findNextDivision(trackData.beatsStart, beatCounter, "beat")
+      //findNextDivision(trackData.barsStart, barCounter, "bar")
+      //findNextDivision(trackData.sectionsStart, sectionCounter, "section")
 
-      while(truthCond === true && i < trackData.tatumsStart.length) {
-        if (trackData.tatumsStart[i] > trackPosition) {
-          tatumCounter = i
-          console.log("tatumCounter", tatumCounter)
-          truthCond = false;
-        }
-        i++
-      }
-
-
-      if (paused === false && toggle === false) {
+      if (paused === false) {
         //console.log("Start track position", trackPosition)
 
         startTimer()
       }
-      else if (paused === true && toggle === true) {
+      else if (paused === true) {
         //console.log("Stop track position", trackPosition)
 
         stopTimer()
@@ -189,74 +189,42 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
   
 
+
+
     function startTimer () {
 
+      stopTimer()
+      segmentCounter = findNextDivision(trackData.segmentsStart, segmentCounter, "segment")
+      tatumCounter = findNextDivision(trackData.tatumsStart, tatumCounter, "tatum")
+      beatCounter = findNextDivision(trackData.beatsStart, beatCounter, "beat")
+      barCounter = findNextDivision(trackData.barsStart, barCounter, "bar")
+      sectionCounter = findNextDivision(trackData.sectionsStart, sectionCounter, "section")
+
       //console.log("Start timer elapsed time", elapsedTime)
+      elapsedMilliseconds = 0
       toggle = true
       initialDate = new Date();
       initialMilliseconds = initialDate.getTime()
-      console.log("Start timer")
-
-      //console.log(trackData)
+      //console.log("Start timer")
 
       id = setInterval(() => {
         //console.log("Running")
-          elapsedDate = new Date();
-          elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
-          //Need to resolve why only the segmentStart or beatStart are being evaluated
-          //it's because we immediately increment i because segmentstart goes first
-          //this pushes i back more and more
-          
-         if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[beatCounter] - syncCompensation)
-          {
-            
-            if (beatAnimation === -1) {
-              console.log("Beat")
-              beatAnimation = 1
-              console.log(beatAnimation)
-            }
-            else {
-              beatAnimation = -1
-              console.log("Boop")
-            }
-            beatCounter++
-          }
-                   
-         //console.log("elapsedTime + elapsedMilliseconds", elapsedTime + elapsedMilliseconds)
-         //console.log("segmentStart", trackData.segmentsStart[i])
-         if (elapsedTime + elapsedMilliseconds >= trackData.sectionsStart[sectionCounter] - syncCompensation) {
-           sectionCounter++
-           console.log("New section")
-         }
-         if (elapsedTime + elapsedMilliseconds >= trackData.barsStart[barCounter] - syncCompensation) {
-           barCounter++
-           console.log("New bar")
-         }
-         if (elapsedTime + elapsedMilliseconds >= trackData.tatumsStart[tatumCounter] - syncCompensation) {
-           tatumCounter++
-           console.log("New tatum")
-         }
-
-         if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
-          backRowAnimation = trackData.segments[segmentCounter]['pitches']
-          //console.log(trackData.segmentsStart[segmentCounter])
-          //console.log(backRowAnimation)
-
-
-          segmentCounter++
-          //console.log("Segment hit", segmentCounter)
-         }
+        elapsedDate = new Date();
+        elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
+        //console.log("Start timer Elapsed millis", elapsedMilliseconds)
+        //console.log("Tracked time", elapsedTime + elapsedMilliseconds)
+        checkForHits()
 
       }, 1);
     }
 
       function stopTimer () {
-        console.log("Stop timer")
-        //console.log(trackData)
+        //console.log("Stop timer")
+
         clearInterval(id)
-        //console.log("Elapsed milis", elapsedMilliseconds)
+
         //console.log("Stop Timer Elapsed time:", elapsedTime)
-        elapsedTime += elapsedMilliseconds
+
         toggle = false
         //console.log("Stop timer Elapsed millis", elapsedMilliseconds)
         //console.log("Stop timer trackPosition", trackPosition)
@@ -264,9 +232,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         //console.log("Difference", trackPosition - elapsedTime)
       }
 
-    const token = 'BQA75SGchsg5l1O3PC7MxEWmtfa7z6CobIH45HZknojVy7XpSMj0-EfxKBLPsnb6UBWvk9uHAuFhq1XkpEyNIkVg5jPLlmAtArdM3TtJaci4vOyP6BLMfH57gLpYRHBzQFYHNG3LNToZmngoDn9Ojj1JAEahgx0M4A';
+    const token = 'BQDvS5zNqynuiIcRLE0gs08ITHPZI7Np4NeLIDEBvW9Ci3CWJ3l55rCZmd2kIfPi4qDiTwk6fLnz698HWP62bpcp5kvwk3_k441EOAacmhCQSccz_AKRvAvU-vvRll_DcZ_3_5gHj3sU4QcKn4tVqEdEgQiIiSs_ow';
     const player = new Spotify.Player({
-      name: 'Web Playback SDK Quick Start Player',
+      name: 'Hyporeal',
       getOAuthToken: cb => { cb(token); }
     });
 
@@ -282,22 +250,28 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     // Playback status updates
       player.addListener('player_state_changed', state => { 
+
+        elapsedTime = trackPosition
+
+        //if paused, stop timer, if playing,stop timer, start timer
+
         //console.log("State change")
-        sectionCounter = 0
-        barCounter = 0
-        beatCounter = 0
-        tatumCounter = 0
-        segmentCounter = 0
+        //sectionCounter = 0
+        //barCounter = 0
+        //beatCounter = 0
+        //tatumCounter = 0
+        //segmentCounter = 0
 
         current_track_id = state['track_window']['current_track']['id']
 
+        //timerControl(state['paused'])
+        //startTimer()
         trackPosition = state['position']
-
+        //we want elapsedTime to adjust when a skip occurs
         if (current_track_id !== stored_track_id) {
 
           trackPosition = 0
-          elapsedMilliseconds = 0
-          stopTimer()
+
           stored_track_id = current_track_id
 
           console.log('New track detected:', stored_track_id)
@@ -315,7 +289,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
               trackData = new songData(data)
               return trackData
             })
-            .then(trackData => console.log(trackData))
+           // .then(trackData => console.log(trackData))
             .then(timerControl(state['paused']))
             //.then(animate())
         }
@@ -323,6 +297,23 @@ window.onSpotifyWebPlaybackSDKReady = () => {
           timerControl(state['paused'])
         }
     });
+
+var id2
+    id2 = setInterval(() => {
+      player.getCurrentState().then(state => {
+        if(!state) {
+          console.log("No music playing")
+          return
+        }
+        trackPosition = state['position']
+        elapsedTime = trackPosition
+        //console.log("Query trackPosition", trackPosition)
+        if (state['paused'] === false) {
+          startTimer()
+        }
+      })
+    }, 100)
+
 
     //create a songData object
     class songData {
