@@ -1,7 +1,7 @@
 
 
 window.onSpotifyWebPlaybackSDKReady = () => {
-
+/*
   var scene = new THREE.Scene();
 
   var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -81,17 +81,260 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   };
 
   animate();
-//////Scene2////////
-/*
-  var scene2 = new THREE.Scene();
+*/
+var beatAnimation = 0
 
-  var camera2 = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+var planeDimension = 12
+var planeBackRowAnimation = [0,0,0,0,0,0,0,0,0,0,0,0]
+var planeStoredBackRow = [0,0,0,0,0,0,0,0,0,0,0,0]
 
-  var renderer2 = new THREE.WebGLRenderer({antialias: true});
 
-  renderer2.setSize( window.innerWidth / 2, window.innerHeight / 2 );
-  document.body.appendChild( renderer2.domElement );
-  */
+function main() {
+  const canvas = document.querySelector('#c');
+  const renderer = new THREE.WebGLRenderer({canvas, alpha: true, antialias: true});
+  
+
+
+  function makeScene(elem) {
+    const scene = new THREE.Scene();
+    const fov = 45;
+    const aspect = 2;  // the canvas default
+    const near = 0.1;
+    const far = 1000;
+    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    camera.position.set(0, 0, 2);
+    camera.lookAt(0, 0, 0);
+
+    {
+      const color = 0xFFFFFF;
+      const intensity = 0.5;
+      const light = new THREE.DirectionalLight(color, intensity);
+      light.position.set(-1, 2, 4);
+      scene.add(light);
+    }
+
+    return {scene, camera, elem};
+  }
+
+  function setupScene1() {
+    const sceneInfo = makeScene(document.querySelector('#box'));
+    var geometry = new THREE.PlaneGeometry( 2, 1, planeDimension - 1, planeDimension - 1 );
+
+    var material = new THREE.MeshBasicMaterial();
+    var plane = new THREE.Mesh( geometry, material );
+    sceneInfo.scene.add(plane);
+    plane.material.wireframe = true
+    plane.rotation.set(-45, 0, 0)
+    sceneInfo.camera.fov = 75
+    sceneInfo.mesh = plane;
+    console.log(sceneInfo)
+    return sceneInfo;
+  }
+  var beatLinePoints = []
+
+  beatLinePoints.push( new THREE.Vector3( 0, 0, 0 ) );
+  beatLinePoints.push( new THREE.Vector3( 0, 0, 0 ) );
+
+
+
+  
+  function setupScene2() {
+      const sceneInfo = makeScene(document.querySelector('#pyramid'));
+      const radius = .02;
+      const widthSegments = 10;
+      const heightSegments = 10;
+      const geometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
+      const material = new THREE.MeshPhongMaterial({
+          color: 'white',
+          flatShading: true,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+
+      var beatLineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff, } );
+      var beatLineGeometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
+      var beatLine = new THREE.Line(beatLineGeometry, beatLineMaterial)
+        sceneInfo.scene.add(beatLine)
+        sceneInfo.scene.add(mesh);
+        sceneInfo.mesh = mesh;
+        sceneInfo.beatLine = beatLine
+        var beatLineArray = []
+        sceneInfo.beatLineArray = beatLineArray
+        return sceneInfo;
+    }
+    
+    function setupScene3() {
+      const sceneInfo = makeScene(document.querySelector('#plane'));
+      const geometry = new THREE.PlaneBufferGeometry( 1, 1, 32 );
+      const material = new THREE.MeshBasicMaterial( {color: 'purple', side: THREE.DoubleSide} );
+      const mesh = new THREE.Mesh(geometry, material);
+      sceneInfo.scene.add(mesh);
+      sceneInfo.mesh = mesh;
+      return sceneInfo;
+    }
+
+    function setupScene4() {
+      const sceneInfo = makeScene(document.querySelector('#dodecahedron'));
+      const geometry = new THREE.DodecahedronBufferGeometry(1, 1, 1);
+      const material = new THREE.MeshPhongMaterial({color: 'red'});
+      const mesh = new THREE.Mesh(geometry, material);
+      sceneInfo.scene.add(mesh);
+      sceneInfo.mesh = mesh;
+      sceneInfo.camera.position.z = 4
+      return sceneInfo;
+    }
+  const sceneInfo1 = setupScene1();
+  const sceneInfo2 = setupScene2();
+  const sceneInfo3 = setupScene3();
+  const sceneInfo4 = setupScene4();
+
+
+  function resizeRendererToDisplaySize(renderer) {
+    const canvas = renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const needResize = canvas.width !== width || canvas.height !== height;
+    if (needResize) {
+      renderer.setSize(width, height, false);
+    }
+    return needResize;
+  }
+
+  function renderSceneInfo(sceneInfo) {
+    const {scene, camera, elem} = sceneInfo;
+
+    // get the viewport relative position of this element
+    const {left, right, top, bottom, width, height} =
+        elem.getBoundingClientRect();
+
+    const isOffscreen =
+        bottom < 0 ||
+        top > renderer.domElement.clientHeight ||
+        right < 0 ||
+        left > renderer.domElement.clientWidth;
+
+    if (isOffscreen) {
+      return;
+    }
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+
+    const positiveYUpBottom = renderer.domElement.clientHeight - bottom;
+    renderer.setScissor(left, positiveYUpBottom, width, height);
+    renderer.setViewport(left, positiveYUpBottom, width, height);
+
+    renderer.render(scene, camera);
+  }
+
+  function pitchPlaneAnimation () {
+    var rowVertices = 143
+    var columnVertices = 131
+
+    if (planeStoredBackRow !== planeBackRowAnimation) {
+      planeStoredBackRow = planeBackRowAnimation
+      for(i = 0; i < planeDimension; i++) {
+        sceneInfo1.mesh.geometry.vertices[i].z = planeStoredBackRow[i]
+      }
+    }
+
+    else {
+      for(i = 0; i < planeDimension; i++) {
+        if(sceneInfo1.mesh.geometry.vertices[i].z > 0) {
+          sceneInfo1.mesh.geometry.vertices[i].z -= 0.01
+        }
+      }
+    }
+    sceneInfo1.mesh.geometry.verticesNeedUpdate = true
+
+    for(columnVertices; columnVertices >= 11; columnVertices -= planeDimension) {
+      for(rowVertices; rowVertices > columnVertices; rowVertices--) {
+        sceneInfo1.mesh.geometry.vertices[rowVertices].z = sceneInfo1.mesh.geometry.vertices[rowVertices - planeDimension].z
+      }
+    }
+  }
+  var lineCounter = 0
+  var movementRate = .01
+  function beatLineAnimation() {
+    var frustum = new THREE.Frustum();
+    var cameraViewProjectionMatrix = new THREE.Matrix4();
+    
+    // every time the camera or objects change position (or every frame)
+    
+    sceneInfo2.camera.updateMatrixWorld(); // make sure the camera matrix is updated
+    sceneInfo2.camera.matrixWorldInverse.getInverse( sceneInfo2.camera.matrixWorld );
+    cameraViewProjectionMatrix.multiplyMatrices( sceneInfo2.camera.projectionMatrix, sceneInfo2.camera.matrixWorldInverse );
+    frustum.setFromProjectionMatrix( cameraViewProjectionMatrix );
+
+
+
+    if (frustum.intersectsObject(sceneInfo2.mesh) === false) {
+      sceneInfo2.mesh.position.x = -0.8
+      //movementRate = 0
+      //we are drawing a line on the way back
+
+
+
+      //need to make this not hardcoded
+      //sceneInfo2.mesh.position.x = -.8
+      
+      for (var i = lineCounter; i >= 0; i--) {
+        sceneInfo2.scene.remove(sceneInfo2.beatLineArray[i])
+      }
+
+      lineCounter = 0
+      beatLinePoints = []
+      beatLinePoints.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
+      beatLinePoints.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
+    
+      sceneInfo2.beatLineArray = []
+    }
+    else {
+      //console.log(sceneInfo2.beatLineArray)
+          beatLinePoints.shift()
+          beatLinePoints.push(new THREE.Vector3(sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0))
+          //console.log(sceneInfo2.beatLineArray)
+          //console.log(factor)
+          //console.log(sceneInfo2.mesh.position.x)
+          sceneInfo2.beatLine.geometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
+          sceneInfo2.beatLineArray[lineCounter] = new THREE.Line(sceneInfo2.beatLine.geometry, sceneInfo2.beatLine.material)
+          sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
+          lineCounter++
+          sceneInfo2.mesh.position.y = beatAnimation / 2
+          sceneInfo2.mesh.position.x += movementRate
+    }
+  }
+
+  function render(time) {
+
+    time *= 0.001;
+    pitchPlaneAnimation()
+    beatLineAnimation()
+
+    resizeRendererToDisplaySize(renderer);
+
+    renderer.setScissorTest(false);
+    renderer.clear(true, true);
+    renderer.setScissorTest(true);
+
+
+
+    sceneInfo3.mesh.rotation.y = time * .1;
+    sceneInfo4.mesh.rotation.y = time * .1;
+
+    renderSceneInfo(sceneInfo1);
+    renderSceneInfo(sceneInfo2);
+    renderSceneInfo(sceneInfo3);
+    renderSceneInfo(sceneInfo4);
+
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+
+}
+
+main();
+
 
     var trackPosition
     var initialMilliseconds
@@ -100,7 +343,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var elapsedMilliseconds
     var elapsedDate
     var elapsedTime = 0
-    var toggle = false
     var syncCompensation = 0
 
     var sectionCounter = 0
@@ -141,8 +383,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         beatCounter++
       }
                
-     //console.log("elapsedTime + elapsedMilliseconds", elapsedTime + elapsedMilliseconds)
-     //console.log("segmentStart", trackData.segmentsStart[i])
      if (elapsedTime + elapsedMilliseconds >= trackData.sectionsStart[sectionCounter] - syncCompensation) {
        sectionCounter++
        console.log("New section")
@@ -157,7 +397,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
      }
 
      if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
-      backRowAnimation = trackData.segments[segmentCounter]['pitches']
+      planeBackRowAnimation = trackData.segments[segmentCounter]['pitches']
       //console.log(trackData.segmentsStart[segmentCounter])
       //console.log(backRowAnimation)
 
@@ -167,29 +407,15 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
     function timerControl(paused) {
 
- 
-      //segmentCounter = findNextDivision(trackData.segmentsStart, segmentCounter, "segment")
-      
-      //findNextDivision(trackData.tatumsStart, tatumCounter, "tatum")
-      //findNextDivision(trackData.beatsStart, beatCounter, "beat")
-      //findNextDivision(trackData.barsStart, barCounter, "bar")
-      //findNextDivision(trackData.sectionsStart, sectionCounter, "section")
-
       if (paused === false) {
-        //console.log("Start track position", trackPosition)
-
         startTimer()
       }
-      else if (paused === true) {
-        //console.log("Stop track position", trackPosition)
 
+      else if (paused === true) {
         stopTimer()
       }
-        
     }
   
-
-
 
     function startTimer () {
 
@@ -202,13 +428,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
       //console.log("Start timer elapsed time", elapsedTime)
       elapsedMilliseconds = 0
-      toggle = true
       initialDate = new Date();
       initialMilliseconds = initialDate.getTime()
       //console.log("Start timer")
 
       id = setInterval(() => {
-        //console.log("Running")
         elapsedDate = new Date();
         elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
         //console.log("Start timer Elapsed millis", elapsedMilliseconds)
@@ -219,20 +443,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
       function stopTimer () {
-        //console.log("Stop timer")
-
         clearInterval(id)
-
-        //console.log("Stop Timer Elapsed time:", elapsedTime)
-
-        toggle = false
-        //console.log("Stop timer Elapsed millis", elapsedMilliseconds)
-        //console.log("Stop timer trackPosition", trackPosition)
-
-        //console.log("Difference", trackPosition - elapsedTime)
       }
 
-    const token = 'BQDvS5zNqynuiIcRLE0gs08ITHPZI7Np4NeLIDEBvW9Ci3CWJ3l55rCZmd2kIfPi4qDiTwk6fLnz698HWP62bpcp5kvwk3_k441EOAacmhCQSccz_AKRvAvU-vvRll_DcZ_3_5gHj3sU4QcKn4tVqEdEgQiIiSs_ow';
+    const token = 'BQDJo5PENWVJND-m5hoASaFA4OO_jwre-6g-LXh4BTT2_qMQY7ZClqEQ2phZVKmEDaIQsxcjiUishnOKg4FMparIWGKmohDz5xL7OQ1DD4LIBoH6iyOaG0kMmBUYKIJvZbVLgzQpbBdNlEmdbbj_4MxPwHE8fCjS1A';
     const player = new Spotify.Player({
       name: 'Hyporeal',
       getOAuthToken: cb => { cb(token); }
@@ -252,26 +466,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
       player.addListener('player_state_changed', state => { 
 
         elapsedTime = trackPosition
-
-        //if paused, stop timer, if playing,stop timer, start timer
-
-        //console.log("State change")
-        //sectionCounter = 0
-        //barCounter = 0
-        //beatCounter = 0
-        //tatumCounter = 0
-        //segmentCounter = 0
-
         current_track_id = state['track_window']['current_track']['id']
 
-        //timerControl(state['paused'])
-        //startTimer()
         trackPosition = state['position']
-        //we want elapsedTime to adjust when a skip occurs
         if (current_track_id !== stored_track_id) {
 
           trackPosition = 0
-
           stored_track_id = current_track_id
 
           console.log('New track detected:', stored_track_id)
@@ -297,9 +497,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
           timerControl(state['paused'])
         }
     });
-
-var id2
-    id2 = setInterval(() => {
+var trackPositionQueryRate = 10000
+var trackPositionQuery
+//add something to allow stop querying when we don't need to
+    trackPositionQuery = setInterval(() => {
       player.getCurrentState().then(state => {
         if(!state) {
           console.log("No music playing")
@@ -312,7 +513,7 @@ var id2
           startTimer()
         }
       })
-    }, 100)
+    }, trackPositionQueryRate)
 
 
     //create a songData object
@@ -339,7 +540,6 @@ var id2
           this.segmentsStart[i] = parseFloat((this.segments[i]['start'] * 1000).toFixed(2))
         }
 
-
         this.sectionsStart = []
         for (let i = 0; i < this.sections.length; i++) {
           this.sectionsStart[i] = parseFloat((this.sections[i]['start'] * 1000).toFixed(2))
@@ -349,9 +549,7 @@ var id2
         for (let i = 0; i < this.bars.length; i++) {
           this.barsStart[i] = parseFloat((this.bars[i]['start'] * 1000).toFixed(2))
         }
-        
       }
-
     }
 
     // Ready
@@ -368,13 +566,12 @@ var id2
     player.connect();
 
     //Pause
-    document.getElementById('toggle-button').addEventListener('click', function() {
-      player.togglePlay().then(() => {
-      console.log('Toggled!');
+  //   document.getElementById('toggle-button').addEventListener('click', function() {
+  //     player.togglePlay().then(() => {
+  //     console.log('Toggled!');
 
-    });
-    });
-
-  };
+  //   });
+  // });
+};
 
 
