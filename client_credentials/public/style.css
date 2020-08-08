@@ -1,0 +1,31 @@
+body {
+    display: block;
+    margin: 8px;
+}
+
+#c {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    background-color: black;
+    z-index: -1;
+  }
+  .diagram {
+    display: inline-block;
+    width: 50%;
+    /*I'll need to fix this not being responsive*/
+    height: 400px;
+
+    
+  }
+  .left {
+    float: left;
+
+  }
+  .right {
+    float: right;
+
+  }
