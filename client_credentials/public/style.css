@@ -13,6 +13,11 @@ body {
     background-color: black;
     z-index: -1;
   }
+
+  #plane {
+    border-style: double;
+    border-color: white
+  }
   .diagram {
     display: inline-block;
     width: 50%;
