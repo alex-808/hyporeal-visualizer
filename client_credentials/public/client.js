@@ -1,92 +1,14 @@
 
 
 window.onSpotifyWebPlaybackSDKReady = () => {
-/*
-  var scene = new THREE.Scene();
 
-  var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-
-  var renderer = new THREE.WebGLRenderer({antialias: true});
-
-  var dimension = 12
-
-  renderer.setSize( window.innerWidth / 2, window.innerHeight / 2 );
-  document.body.appendChild( renderer.domElement );
-
-  window.addEventListener('resize', function () {
-    renderer.setSize(window.innerWidth / 2, window.innerHeight / 2)
-    camera.aspect = window.innerWidth / window.innerHeight
-
-    camera.updateProjectionMatrix()
-  })
-  
-  var geometry = new THREE.PlaneGeometry( 2, 1, dimension - 1, dimension - 1 );
-  var material = new THREE.MeshBasicMaterial();
-  var plane = new THREE.Mesh( geometry, material );
-  plane.material.wireframe = true
-  plane.rotation.set(-45, 0, 0)
-  scene.add( plane );
-
-  camera.position.z = 2;
-
-  var backRowAnimation = [0,0,0,0,0,0,0,0,0,0,0,0]
-  var storedBackRow = [0,0,0,0,0,0,0,0,0,0,0,0]
-  var beatAnimation = 0
-
-
-  for(i = 0; i < dimension; i++) {
-    plane.geometry.vertices[i].z = .5
-  }
-  console.log(camera.position.x)
-  var animate = function () {
-    requestAnimationFrame( animate );
-
-    if (storedBackRow !== backRowAnimation) {
-      storedBackRow = backRowAnimation
-      for(i = 0; i < dimension; i++) {
-        //var random = (Math.random() * 2 - 1) * .01
-        //plane.geometry.vertices[i].z += random
-        plane.geometry.vertices[i].z = storedBackRow[i]
-
-        //plane.geometry.vertices[rowVertices].z = .2
-        //plane.geometry.vertices[rowVertices].z = plane.geometry.vertices[rowVertices-dimension].z
-      }
-    }
-    
-    else {
-      for(i = 0; i < dimension; i++) {
-        if(plane.geometry.vertices[i].z > 0) {
-        plane.geometry.vertices[i].z -= 0.01
-      }
-    }
-  }
-    plane.geometry.verticesNeedUpdate = true
-
-    //console.log(backRowAnimation)
-  var rowVertices = 143
-  var columnVertices = 131
-
-  for(columnVertices; columnVertices >= 11; columnVertices -= dimension) {
-
-    for(rowVertices; rowVertices > columnVertices; rowVertices--) {
-
-      plane.geometry.vertices[rowVertices].z = plane.geometry.vertices[rowVertices - dimension].z
-      //plane.geometry.vertices[rowVertices].y += beatAnimation * 0.01
-  
-    }
-  }
-
-    renderer.render( scene, camera );
-
-  };
-
-  animate();
-*/
 var beatAnimation = 0
 
 var planeDimension = 12
 var planeBackRowAnimation = [0,0,0,0,0,0,0,0,0,0,0,0]
 var planeStoredBackRow = [0,0,0,0,0,0,0,0,0,0,0,0]
+
+var neoDimension
 
 
 function main() {
@@ -127,17 +49,15 @@ function main() {
     plane.rotation.set(-45, 0, 0)
     sceneInfo.camera.fov = 75
     sceneInfo.mesh = plane;
-    console.log(sceneInfo)
+
     return sceneInfo;
   }
+
   var beatLinePoints = []
 
   beatLinePoints.push( new THREE.Vector3( 0, 0, 0 ) );
   beatLinePoints.push( new THREE.Vector3( 0, 0, 0 ) );
 
-
-
-  
   function setupScene2() {
       const sceneInfo = makeScene(document.querySelector('#pyramid'));
       const radius = .02;
@@ -148,29 +68,161 @@ function main() {
           color: 'white',
           flatShading: true,
         });
-        const mesh = new THREE.Mesh(geometry, material);
+      const mesh = new THREE.Mesh(geometry, material);
+      sceneInfo.scene.add(mesh);
+      sceneInfo.mesh = mesh;
 
       var beatLineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff, } );
       var beatLineGeometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
       var beatLine = new THREE.Line(beatLineGeometry, beatLineMaterial)
-        sceneInfo.scene.add(beatLine)
-        sceneInfo.scene.add(mesh);
-        sceneInfo.mesh = mesh;
-        sceneInfo.beatLine = beatLine
-        var beatLineArray = []
-        sceneInfo.beatLineArray = beatLineArray
-        return sceneInfo;
-    }
-    
-    function setupScene3() {
-      const sceneInfo = makeScene(document.querySelector('#plane'));
-      const geometry = new THREE.PlaneBufferGeometry( 1, 1, 32 );
-      const material = new THREE.MeshBasicMaterial( {color: 'purple', side: THREE.DoubleSide} );
-      const mesh = new THREE.Mesh(geometry, material);
-      sceneInfo.scene.add(mesh);
-      sceneInfo.mesh = mesh;
+      sceneInfo.scene.add(beatLine)
+      sceneInfo.beatLine = beatLine
+      var beatLineArray = []
+      sceneInfo.beatLineArray = beatLineArray
       return sceneInfo;
     }
+    
+
+    var squaresArray = []
+
+    function setupScene3() {
+      //Pen
+      const sceneInfo = makeScene(document.querySelector('#plane'));
+      const radius = .02;
+      const widthSegments = 1
+      const heightSegments = 1
+      const geometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
+      const material = new THREE.MeshPhongMaterial({
+        color: 'white',
+        flatShading: true,
+      });
+      const pen = new THREE.Mesh(geometry, material);
+      // pen.position.x = -.75
+      // pen.position.y = .75
+      pen.position.x = 0
+      pen.position.y = 0
+      sceneInfo.scene.add(pen);
+      sceneInfo.pen = pen;
+
+      //Plane
+      var planeGeometry = new THREE.PlaneGeometry( 1.5, 1.5, neoDimension, neoDimension);
+      var planeMaterial = new THREE.MeshBasicMaterial();
+      var plane = new THREE.Mesh( planeGeometry, planeMaterial );
+      sceneInfo.scene.add(plane);
+      plane.material.wireframe = true
+      plane.rotation.set(0, 0, 0)
+
+      var q = 0
+      var k = 0
+      for (var i = 0; i < neoDimension * neoDimension; i++) {
+        squaresArray[i] = []
+        if(i % neoDimension === 0 && i > 0) {
+          q++
+        }
+        for (var j = 0; j < neoDimension; j++) {
+          if(j < 2) {
+            k = 0
+            squaresArray[i][j] = plane.geometry.vertices[i + j + q]
+          }
+          else {
+            k = neoDimension - 1
+            squaresArray[i][j] = plane.geometry.vertices[i + j + k + q]
+          }
+        }
+      }
+      
+      //Line
+      var neoLinePoints = []
+      neoLinePoints.push( new THREE.Vector3( pen.position.x, pen.position.y, 0 ) );
+      neoLinePoints.push( new THREE.Vector3( pen.position.x, pen.position.y, 0 ) );
+      var neoLineArray = []
+      var neoLineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff, } );
+      var neoLineGeometry = new THREE.BufferGeometry().setFromPoints(neoLinePoints)
+      var neoLine = new THREE.Line(neoLineGeometry, neoLineMaterial)
+      sceneInfo.neoLine = neoLine
+      sceneInfo.neoLineArray = neoLineArray
+      sceneInfo.neoLinePoints = neoLinePoints
+      sceneInfo.scene.add(neoLine)
+
+      return sceneInfo;
+    }
+    var neoLineCounter = 0
+    var writeCounter = 0
+    var toggle = true
+    var storedBeatCounter = 0
+    var toggle2 = true
+    var r = .3
+
+  function neoLineAnimation() {
+    if (storedBeatCounter !== beatCounter) {
+      storedBeatCounter = beatCounter
+      sceneInfo3.pen.position.x = squaresArray[barCounter][0].x
+      sceneInfo3.pen.position.y = squaresArray[barCounter][0].y
+      sceneInfo3.neoLinePoints.shift()
+      sceneInfo3.neoLinePoints.shift()
+      sceneInfo3.neoLinePoints.push( new THREE.Vector3( sceneInfo3.pen.position.x, sceneInfo3.pen.position.y, 0 ) );
+      sceneInfo3.neoLinePoints.push( new THREE.Vector3( sceneInfo3.pen.position.x, sceneInfo3.pen.position.y, 0 ) );
+
+      drawTriangle(sceneInfo3.pen.position.x, sceneInfo3.pen.position.y)
+
+    }
+   
+    //Trying to draw a circle
+    // if(toggle2 === true) {
+    //   for (var x = -r; x <= r;) {
+    //         console.log("X", x)
+    //         x = parseFloat((x += .01).toFixed(1))
+    //     for (var y = -r; y <= r;) {
+    //           console.log("Y", y)
+    //           y = parseFloat((y += .01).toFixed(1))
+    //       if(Math.pow(x, 2) + Math.pow(y, 2) === Math.pow(r, 2)) {
+    //         sceneInfo3.pen.position.x = x
+    //         sceneInfo3.pen.position.y = y
+    //         drawNeoLine()
+    //         console.log("X", x)
+    //         console.log("Y", y)
+    //         console.log("X squared", Math.pow(x, 2))
+    //         console.log("Y squared", Math.pow(y, 2))
+    //         // console.log("The sum", Math.pow(x, 2) + Math.pow(y, 2))
+    //         // console.log("The radius squared", Math.pow(r, 2))
+    //       }
+    //     }
+    //   }
+
+    //   toggle2 = false
+    //   console.log('ran')
+    // }
+    drawNeoLine()
+  
+    if (toggle === true) {
+      console.log(sceneInfo3.neoLine.geometry)
+      toggle = false
+    }
+  }
+
+  function drawTriangle(x, y) {
+    initialX = x
+    initialY = y
+
+    sceneInfo3.pen.position.x += .1
+    drawNeoLine()
+    sceneInfo3.pen.position.y += .1
+    drawNeoLine()
+    sceneInfo3.pen.position.x = initialX
+    sceneInfo3.pen.position.y = initialY
+    //drawNeoLine()
+  }
+
+  function drawNeoLine () {
+
+    sceneInfo3.neoLinePoints.shift()
+    sceneInfo3.neoLinePoints.push( new THREE.Vector3( sceneInfo3.pen.position.x, sceneInfo3.pen.position.y, 0 ) );
+
+    sceneInfo3.neoLine.geometry = new THREE.BufferGeometry().setFromPoints(sceneInfo3.neoLinePoints)
+    sceneInfo3.neoLineArray[lineCounter] = new THREE.Line(sceneInfo3.neoLine.geometry, sceneInfo3.neoLine.material)
+    neoLineCounter++
+    sceneInfo3.scene.add(sceneInfo3.neoLineArray[lineCounter])
+  }
 
     function setupScene4() {
       const sceneInfo = makeScene(document.querySelector('#dodecahedron'));
@@ -252,6 +304,7 @@ function main() {
       }
     }
   }
+
   var lineCounter = 0
   var movementRate = .01
   function beatLineAnimation() {
@@ -265,17 +318,9 @@ function main() {
     cameraViewProjectionMatrix.multiplyMatrices( sceneInfo2.camera.projectionMatrix, sceneInfo2.camera.matrixWorldInverse );
     frustum.setFromProjectionMatrix( cameraViewProjectionMatrix );
 
-
-
     if (frustum.intersectsObject(sceneInfo2.mesh) === false) {
-      sceneInfo2.mesh.position.x = -0.8
-      //movementRate = 0
-      //we are drawing a line on the way back
-
-
-
       //need to make this not hardcoded
-      //sceneInfo2.mesh.position.x = -.8
+      sceneInfo2.mesh.position.x = -0.8
       
       for (var i = lineCounter; i >= 0; i--) {
         sceneInfo2.scene.remove(sceneInfo2.beatLineArray[i])
@@ -298,17 +343,20 @@ function main() {
           sceneInfo2.beatLine.geometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
           sceneInfo2.beatLineArray[lineCounter] = new THREE.Line(sceneInfo2.beatLine.geometry, sceneInfo2.beatLine.material)
           sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
+
           lineCounter++
           sceneInfo2.mesh.position.y = beatAnimation / 2
           sceneInfo2.mesh.position.x += movementRate
     }
   }
 
+
   function render(time) {
 
     time *= 0.001;
     pitchPlaneAnimation()
     beatLineAnimation()
+    neoLineAnimation()
 
     resizeRendererToDisplaySize(renderer);
 
@@ -318,7 +366,7 @@ function main() {
 
 
 
-    sceneInfo3.mesh.rotation.y = time * .1;
+
     sceneInfo4.mesh.rotation.y = time * .1;
 
     renderSceneInfo(sceneInfo1);
@@ -333,8 +381,20 @@ function main() {
 
 }
 
-main();
-
+//main();
+function setSquaresArray (bars) {
+  var result
+  //console.log(bars.length)
+  if (Math.sqrt(bars.length) % 1 !== 0 ) {
+    var i = 0
+    while (Math.sqrt(result) % 1 !== 0) {
+      result = bars.length + i
+      i++
+    }
+    //console.log(result)
+    return Math.sqrt(result)
+  }
+}
 
     var trackPosition
     var initialMilliseconds
@@ -370,7 +430,7 @@ main();
         function checkForHits () {
       if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[beatCounter] - syncCompensation)
       {
-        console.log("New beat")
+        //console.log("New beat")
         if (beatAnimation === -1) {
           //console.log("Beat")
           beatAnimation = 1
@@ -390,10 +450,11 @@ main();
      if (elapsedTime + elapsedMilliseconds >= trackData.barsStart[barCounter] - syncCompensation) {
        barCounter++
        console.log("New bar")
+       console.log("barCounter", barCounter)
      }
      if (elapsedTime + elapsedMilliseconds >= trackData.tatumsStart[tatumCounter] - syncCompensation) {
        tatumCounter++
-       console.log("New tatum")
+       //console.log("New tatum")
      }
 
      if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
@@ -446,7 +507,7 @@ main();
         clearInterval(id)
       }
 
-    const token = 'BQDJo5PENWVJND-m5hoASaFA4OO_jwre-6g-LXh4BTT2_qMQY7ZClqEQ2phZVKmEDaIQsxcjiUishnOKg4FMparIWGKmohDz5xL7OQ1DD4LIBoH6iyOaG0kMmBUYKIJvZbVLgzQpbBdNlEmdbbj_4MxPwHE8fCjS1A';
+    const token = 'BQDjtmyJPSj9eBeyFg7QDtVmYcW84fr86vP-K9SypN1fwLszAcORwX-WfP5BYfTh-JY_DWJiQeDa-P4wvZdE_HMGHoIqv7bGc01VgIZ47dkxdiyQLkhmkN0g1gm4ro0XQ3-4YAbfny0Uf4KMCEQwUl5U4SOMsw5dIQ';
     const player = new Spotify.Player({
       name: 'Hyporeal',
       getOAuthToken: cb => { cb(token); }
@@ -489,9 +550,10 @@ main();
               trackData = new songData(data)
               return trackData
             })
-           // .then(trackData => console.log(trackData))
+            .then(trackData => neoDimension = setSquaresArray(trackData.bars))
             .then(timerControl(state['paused']))
-            //.then(animate())
+            .then(res => main())
+
         }
         else {
           timerControl(state['paused'])
