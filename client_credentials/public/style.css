@@ -14,10 +14,7 @@ body {
     z-index: -1;
   }
 
-  #plane {
-    border-style: double;
-    border-color: white
-  }
+
   .diagram {
     display: inline-block;
     width: 50%;
