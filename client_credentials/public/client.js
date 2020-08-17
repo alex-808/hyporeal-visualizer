@@ -17,8 +17,9 @@ var pitchSum
 
 function main() {
 
-
+  const canvas2 = document.querySelector('#big');
   const canvas = document.querySelector('#c');
+  const renderer2 = new THREE.WebGLRenderer({canvas, alpha: true, antialias: true});
   const renderer = new THREE.WebGLRenderer({canvas, alpha: true, antialias: true});
   
 
@@ -451,10 +452,14 @@ function main() {
     renderer.setViewport(left, positiveYUpBottom, width, height);
 
     if(sceneInfo === sceneInfo4) {
+      renderer2.setScissor(left, positiveYUpBottom, width, height);
+      renderer2.setViewport(left, positiveYUpBottom, width, height);
       sceneInfo4.plane.geometry.verticesNeedUpdate = true
-      renderer.setRenderTarget(sceneInfo4.bufferTexture)
-      renderer.render(sceneInfo4.bufferScene, camera)
-      renderer.setRenderTarget(null)
+      renderer2.setRenderTarget(sceneInfo4.bufferTexture)
+      renderer2.render(sceneInfo4.bufferScene, camera)
+      renderer2.setRenderTarget(null)
+      renderer2.render(scene, camera);
+      return
     }
 
     renderer.render(scene, camera);
@@ -555,9 +560,9 @@ function main() {
     renderSceneInfo(sceneInfo1);
     renderSceneInfo(sceneInfo2);
     renderSceneInfo(sceneInfo3);
-    renderer.setRenderTarget(sceneInfo4.bufferTexture)
+    renderer2.setRenderTarget(sceneInfo4.bufferTexture)
     renderSceneInfo(sceneInfo4);
-    renderer.setRenderTarget(null)
+    renderer2.setRenderTarget(null)
     renderSceneInfo(sceneInfo4);
     requestAnimationFrame(render);
   }
@@ -705,7 +710,7 @@ function setSquaresArray (bars) {
         clearInterval(id)
       }
 
-    const token = 'BQD_I6bDXeGP45lvMLiQchdWDDPcODAn1s_XcRLQvdP_a_HH6s-UifuXL9Z4IoCYhxorigliftPgtEY3I1PNL9OA-T5lND_KkhVdM7UlUYAkWwBrUs4v7p9elUUBFfMvGqrsin5GDJ9cdBNPPG8ZTBeDpcLVN1yFBQ';
+    const token = 'BQAhdhv4HPjK8THS96Md-xFLW8T3kvBmxKoY92IrAXzT3Ji13kIkikhpZB_HoIl0wc6zPbF2RtaFhDAPDwk1rSHr_bWc9AnymJB57zQTNUDZTj64AWJ0e8SV5nF4e7cc5_TGdVjKrS_gLWAhSd6VcSl0LWsF5ILnfQ';
     const player = new Spotify.Player({
       name: 'Hyporeal',
       getOAuthToken: cb => { cb(token); }
