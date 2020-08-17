@@ -10,7 +10,18 @@ body {
     width: 100vw;
     height: 100vh;
     display: block;
-    background-color: black;
+    background-image: url('tunnel.jpg');
+    z-index: -2;
+  }
+
+  #big {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+
     z-index: -1;
   }
 
@@ -20,6 +31,7 @@ body {
     width: 50%;
     /*I'll need to fix this not being responsive*/
     height: 400px;
+    z-index: 1;
 
     
   }

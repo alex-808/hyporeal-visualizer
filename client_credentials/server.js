@@ -18,17 +18,12 @@ app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, '/public', 'index.html'));
 })
 
-var testJSON = {
-  "this":"that"
-}
+
 
 app.post('/', function(req, res)  {
   var current_track_id = req.body['track_window']['current_track']['id']
     API_call(current_track_id)
     .then(data => res.send(data))
-    //.then( => res.send(API_data));
-    //console.log(testJSON)
-    //res.send(testJSON)
 })
 
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
