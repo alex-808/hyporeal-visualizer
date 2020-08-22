@@ -7,13 +7,12 @@ var beatAnimation = 0
 var planeDimension = 12
 var planeBackRowAnimation = [0,0,0,0,0,0,0,0,0,0,0,0]
 var planeStoredBackRow = [0,0,0,0,0,0,0,0,0,0,0,0]
-
+var squareDivision = 7
 var neoDimension
 
-var neoLineXVector = 0
-var neoLineYVector = 0
+var timbreSum1 = 0
+var timbreSum2 = 0
 
-var pitchSum
 
 function main() {
 
@@ -67,7 +66,29 @@ function main() {
 
   function setupScene2() {
       const sceneInfo = makeScene(document.querySelector('#pyramid'));
-      const radius = .02;
+      sceneInfo.camera.position.z = 1000
+      var goalLineArray1 = [];
+      var goalLineArray2 = [];
+      
+      goalLineArray1.push(new THREE.Vector3(-1000, 100, 0), new THREE.Vector3(1000, 100, 0));
+      goalLineArray2.push(
+        new THREE.Vector3(-1000, -100, 0),
+        new THREE.Vector3(1000, -100, 0)
+      );
+      
+      var goalLineMaterial = new THREE.LineBasicMaterial({ color: 'white', linewidth: 10 });
+      var goalLine1Geometry = new THREE.BufferGeometry().setFromPoints(
+        goalLineArray1
+      );
+      var goalLine2Geometry = new THREE.BufferGeometry().setFromPoints(
+        goalLineArray2
+      );
+      var goalLine1 = new THREE.Line(goalLine1Geometry, goalLineMaterial);
+      var goalLine2 = new THREE.Line(goalLine2Geometry, goalLineMaterial);
+      // sceneInfo.scene.add(goalLine1);
+      // sceneInfo.scene.add(goalLine2);
+
+      const radius = 10;
       const widthSegments = 10;
       const heightSegments = 10;
       const geometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
@@ -79,7 +100,7 @@ function main() {
       sceneInfo.scene.add(mesh);
       sceneInfo.mesh = mesh;
 
-      var beatLineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff, } );
+      var beatLineMaterial = new THREE.LineBasicMaterial( { color: 'white', } );
       var beatLineGeometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
       var beatLine = new THREE.Line(beatLineGeometry, beatLineMaterial)
       sceneInfo.scene.add(beatLine)
@@ -95,7 +116,7 @@ function main() {
     function setupScene3() {
       //Pen
       const sceneInfo = makeScene(document.querySelector('#plane'));
-      const radius = .2;
+      const radius = .02;
       const widthSegments = 1
       const heightSegments = 1
       const geometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
@@ -120,7 +141,7 @@ function main() {
       var plane = new THREE.Mesh( planeGeometry, planeMaterial );
       sceneInfo.planeWidth = planeWidth
       sceneInfo.planeHeight = planeHeight
-      sceneInfo.scene.add(plane);
+      //sceneInfo.scene.add(plane);
       plane.material.wireframe = true
       plane.rotation.set(0, 0, 0)
 
@@ -145,8 +166,8 @@ function main() {
       
       //Line
       var neoLinePoints = []
-      neoLinePoints.push( new THREE.Vector3( pen.position.x, pen.position.y, 0 ) );
-      neoLinePoints.push( new THREE.Vector3( pen.position.x, pen.position.y, 0 ) );
+      //neoLinePoints.push( new THREE.Vector3( pen.position.x, pen.position.y, 0 ) );
+      //neoLinePoints.push( new THREE.Vector3( pen.position.x + 1, pen.position.y, 0 ) );
       var neoLineArray = []
       var neoLineMaterial = new THREE.LineBasicMaterial( { color: 'white', } );
       var neoLineGeometry = new THREE.BufferGeometry().setFromPoints(neoLinePoints)
@@ -158,127 +179,73 @@ function main() {
 
       return sceneInfo;
     }
-    var neoLineCounter = 0
-    var writeCounter = 0
+
     var toggle = true
     var neoStoredBarCounter = 0
-    var toggle2 = true
-    var r = .3
+    var neoLineCounter = 0
+    var neoStoredSegCounter = 0
+    var twoCounter = 0
 
-    var neoLineVelocity = 0.1
-    var cameraMovement = .001
-  console.log(trackData)
+    var boxWidth
+    var boxDivisions
 
+    var neoLineArray = []
   function neoLineAnimation() {
-    //neoLineCounter++
-    //if (neoLineCounter === 10) {
-      //neoLineCounter = 0
-      if (neoStoredBarCounter !== barCounter) {
-        console.log('ran')
-        neoStoredBarCounter = barCounter
-        cameraMovement = -cameraMovement
-        sceneInfo3.pen.position.x = squaresArray[barCounter][0].x + .001
-        sceneInfo3.pen.position.y = squaresArray[barCounter][0].y - sceneInfo3.planeWidth/neoDimension/2
-        sceneInfo3.pen.position.z = 0
-        sceneInfo3.neoLinePoints.shift()
-        sceneInfo3.neoLinePoints.shift()
-        sceneInfo3.neoLinePoints.push( new THREE.Vector3( sceneInfo3.pen.position.x, sceneInfo3.pen.position.y, sceneInfo3.pen.position.z ) );
-        sceneInfo3.neoLinePoints.push( new THREE.Vector3( sceneInfo3.pen.position.x, sceneInfo3.pen.position.y, sceneInfo3.pen.position.z ) );
-  
-        //drawTriangle(sceneInfo3.pen.position.x, sceneInfo3.pen.position.y)
-      }
-      //sceneInfo3.camera.position.x += cameraMovement
-      //sceneInfo3.camera.position.y += cameraMovement
 
-      // if (neoLineXVector > 10) {
-      //   neoLineXVector = 0
-      // }
-      if (neoLineYVector > 0) {
-        neoLineYVector -= 0.01
-      }
-      else if (neoLineYVector < 0) {
-        neoLineYVector += 0.01
-      }
-
-      if (neoLineXVector > 0) {
-        neoLineXVector -= 0.1
-      }
-      else if (neoLineXVector < 0) {
-        neoLineXVector += 0.1
-      }
-      sceneInfo3.pen.position.y += neoLineVelocity * neoLineYVector
-      sceneInfo3.pen.position.x += neoLineVelocity * neoLineXVector
-      if (sceneInfo3.pen.position.x < squaresArray[barCounter][0].x || sceneInfo3.pen.position.x > squaresArray[barCounter][1].x) {
-        //console.log("Hit")
-        neoLineXVector = neoLineXVector * -1
-      }
-
-      if (sceneInfo3.pen.position.y > squaresArray[barCounter][0].y || sceneInfo3.pen.position.y < squaresArray[barCounter][2].y) {
-        //console.log("hot")
-        neoLineYVector = neoLineYVector * -1
-      }
-   
-      drawNeoLine()
     
-      if (toggle === true) {
-        //console.log(sceneInfo3.neoLine.geometry)
-        toggle = false
+    if (neoStoredBarCounter !== barCounter) {
+      console.log('ran')
+      neoStoredBarCounter = barCounter
+      sceneInfo3.neoLinePoints = []
+      boxWidth = Math.abs(squaresArray[barCounter][0].x - squaresArray[barCounter][1].x)
+      boxDivisions = boxWidth/7
+
+      for (var i = 0; i < neoLineArray.length; i++) {
+        sceneInfo3.scene.add(neoLineArray[i])
+        
       }
+      neoLineArray = []
+    }
 
-    //}
+    if (neoStoredSegCounter !== segmentCounter) {
+      neoStoredSegCounter = segmentCounter
+      //console.log(sceneInfo3.neoLinePoints)
+      sceneInfo3.neoLinePoints.push(new THREE.Vector2 (squaresArray[barCounter][0].x + (timbreSum1 * boxDivisions) + (boxWidth/2), squaresArray[barCounter][0].y - (timbreSum2 * boxDivisions - (boxWidth/2))))
+      
+      //console.log(boxWidth)
+      twoCounter++
+    }
 
-  }
-
-  function drawTriangle(x, y) {
-    initialX = x
-    initialY = y
-
-    sceneInfo3.pen.position.x += .1
-    drawNeoLine()
-    sceneInfo3.pen.position.y += .1
-    drawNeoLine()
-    sceneInfo3.pen.position.x = initialX
-    sceneInfo3.pen.position.y = initialY
-
-  }
-
-  function drawCircle (x, y) {
-
-        //Trying to draw a circle
-
-      for (var x = -r; x <= r;) {
-            console.log("X", x)
-            x = parseFloat((x += .01).toFixed(1))
-        for (var y = -r; y <= r;) {
-              console.log("Y", y)
-              y = parseFloat((y += .01).toFixed(1))
-          if(Math.pow(x, 2) + Math.pow(y, 2) === Math.pow(r, 2)) {
-            sceneInfo3.pen.position.x = x
-            sceneInfo3.pen.position.y = y
-            drawNeoLine()
-            console.log("X", x)
-            console.log("Y", y)
-            console.log("X squared", Math.pow(x, 2))
-            console.log("Y squared", Math.pow(y, 2))
-            // console.log("The sum", Math.pow(x, 2) + Math.pow(y, 2))
-            // console.log("The radius squared", Math.pow(r, 2))
-          }
-        }
+    if (twoCounter === 3) {
+      //need to change this so it's not a random number
+      if (Math.random() < 0.5) {
+        //console.log("line")
+        var geometry = new THREE.BufferGeometry().setFromPoints(sceneInfo3.neoLinePoints)
+        var material = new THREE.LineBasicMaterial( { color : 'white' } );
+        var line = new THREE.Line(geometry, material)
+        neoLineArray.push(line)
+        //strokeArray.push(line)
+        //sceneInfo3.scene.add(line)
       }
-
+      else {
+        //console.log("curve")
+        var curve = new THREE.SplineCurve( sceneInfo3.neoLinePoints );
+        var points = curve.getPoints( 50 );
+        var geometry = new THREE.BufferGeometry().setFromPoints(points)
+        var material = new THREE.LineBasicMaterial( { color : 'white' } );
+        var splineObject = new THREE.Line( geometry, material );
+        neoLineArray.push(splineObject)
+        // //strokeArray.push(splineObject)
+         //sceneInfo3.scene.add(splineObject)
+      }
+      sceneInfo3.neoLinePoints.shift()
+      sceneInfo3.neoLinePoints.shift()
+      twoCounter = 0
  
+    }
+
   }
 
-  function drawNeoLine () {
-
-    sceneInfo3.neoLinePoints.shift()
-    sceneInfo3.neoLinePoints.push( new THREE.Vector3( sceneInfo3.pen.position.x, sceneInfo3.pen.position.y, sceneInfo3.pen.position.z ) );
-
-    sceneInfo3.neoLine.geometry = new THREE.BufferGeometry().setFromPoints(sceneInfo3.neoLinePoints)
-    sceneInfo3.neoLineArray[lineCounter] = new THREE.Line(sceneInfo3.neoLine.geometry, sceneInfo3.neoLine.material)
-    neoLineCounter++
-    sceneInfo3.scene.add(sceneInfo3.neoLineArray[lineCounter])
-  }
   
     var scene4Toggle = false
     function setupScene4() {
@@ -493,7 +460,12 @@ function main() {
   }
 
   var lineCounter = 0
-  var movementRate = .01
+  var movementRate = 5
+  var velocity = 0;
+  var acceleration = 0;
+
+  var range = 30
+
   function beatLineAnimation() {
     var frustum = new THREE.Frustum();
     var cameraViewProjectionMatrix = new THREE.Matrix4();
@@ -507,7 +479,8 @@ function main() {
 
     if (frustum.intersectsObject(sceneInfo2.mesh) === false) {
       //need to make this not hardcoded
-      sceneInfo2.mesh.position.x = -0.8
+      sceneInfo2.mesh.position.x = -500
+      sceneInfo2.mesh.position.y = 0
       
       for (var i = lineCounter; i >= 0; i--) {
         sceneInfo2.scene.remove(sceneInfo2.beatLineArray[i])
@@ -524,18 +497,42 @@ function main() {
       //console.log(sceneInfo2.beatLineArray)
           beatLinePoints.shift()
           beatLinePoints.push(new THREE.Vector3(sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0))
-          //console.log(sceneInfo2.beatLineArray)
-          //console.log(factor)
-          //console.log(sceneInfo2.mesh.position.x)
           sceneInfo2.beatLine.geometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
           sceneInfo2.beatLineArray[lineCounter] = new THREE.Line(sceneInfo2.beatLine.geometry, sceneInfo2.beatLine.material)
           sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
-
           lineCounter++
-          sceneInfo2.mesh.position.y = beatAnimation / 2
+          
+          //Physics
+          
+          acceleration = 800 / (beatAnimation - sceneInfo2.mesh.position.y)
+
+
+          if (isFinite(acceleration) !== true) {
+      
+              acceleration = 0
+              velocity *= 0.7
+          }
+      
+          else if (sceneInfo2.mesh.position.y > beatAnimation - range && sceneInfo2.mesh.position.y < beatAnimation + range) {
+
+              acceleration = 0
+              velocity *= 0.7
+          }
+      
+      
+          velocity += acceleration;
+      
+          sceneInfo2.mesh.position.y += velocity;
           sceneInfo2.mesh.position.x += movementRate
+      
+        }
+      
+        if (sceneInfo2.mesh.position.y > 150 || sceneInfo2.mesh.position.y < -150) {
+            sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2 
+        }
+          
     }
-  }
+  
 
 
   function render(time) {
@@ -621,14 +618,15 @@ function setSquaresArray (bars) {
       if (elapsedTime + elapsedMilliseconds >= trackData.beatsStart[beatCounter] - syncCompensation)
       {
         //console.log("New beat")
-        if (beatAnimation === -1) {
+        if (beatAnimation === -100) {
           //console.log("Beat")
-          beatAnimation = 1
+          beatAnimation = 100
           //console.log(beatAnimation)
         }
         else {
-          beatAnimation = -1
+          beatAnimation = -100
           //console.log("Boop")
+          //console.log(beatAnimation)
         }
 
         beatCounter++
@@ -650,23 +648,53 @@ function setSquaresArray (bars) {
 
      if (elapsedTime + elapsedMilliseconds >= trackData.segmentsStart[segmentCounter] - syncCompensation) {
       planeBackRowAnimation = trackData.segments[segmentCounter]['pitches']
-      //console.log(planeBackRowAnimation)
-      //console.log(trackData.segmentsStart[segmentCounter])
-      //console.log(backRowAnimation)
-      pitchSum = trackData.segments[segmentCounter].pitches.reduce(timbreReducer)
-      //console.log(pitchSum)
-      //pitchParsed = (pitchSum - 6) / 12
-      //console.log(pitchParsed)
-/
-      //trackData.segments[segmentCounter].timbre
+      var timbreArray = trackData.segments[segmentCounter].timbre
+      var firstHalf = []
+      var secondHalf = []
+      for (var i = 0; i < timbreArray.length; i++) {
+        if (i < 6) {
+          firstHalf.push(timbreArray[i])
+        }
+        else {
+          secondHalf.push(timbreArray[i])
+        }
+
+      }
+
+      timbreSum1 = firstHalf.reduce(timbreReducer)
+      timbreSum2 = secondHalf.reduce(timbreReducer)
+      if (timbreSum1 > 0) {
+        var negative = false
+      }
+      else {
+        var negative = true
+      }
+      timbreSum1 = timbreSum1.toString()
+      timbreSum1 = negative ? parseInt(timbreSum1[1]) * -1 : parseInt(timbreSum1[1])
+
+      if (timbreSum2 > 0) {
+        var negative = false
+      }
+      else {
+        var negative = true
+      }
+      timbreSum2 = timbreSum2.toString()
+      timbreSum2 = negative ? parseInt(timbreSum2[1]) * -1 : parseInt(timbreSum2[1])
+
+      timbreSum1 = Math.ceil(timbreSum1 * .4)
+      timbreSum2 = Math.ceil(timbreSum2 * .4)
+      // console.log(timbreSum1)
+      // console.log(timbreSum2)
+
+
       segmentCounter++
-      //console.log("Segment hit", segmentCounter)
+
      }
     }
 
     function timbreReducer (acc, val) {
-
-      return acc += val
+      
+      return acc *= val
 
     }
     function timerControl(paused) {
@@ -710,7 +738,7 @@ function setSquaresArray (bars) {
         clearInterval(id)
       }
 
-    const token = 'BQAhdhv4HPjK8THS96Md-xFLW8T3kvBmxKoY92IrAXzT3Ji13kIkikhpZB_HoIl0wc6zPbF2RtaFhDAPDwk1rSHr_bWc9AnymJB57zQTNUDZTj64AWJ0e8SV5nF4e7cc5_TGdVjKrS_gLWAhSd6VcSl0LWsF5ILnfQ';
+    const token = 'BQDMP5fT12iIiWppRH1tO0_UnBFeYs_o2upXJWklq6jiXFZ_9JadqEFP-NdQznlB3SNMgDMlrafwOdMwI3MOEzxOJh0yWl2TuPLdkKmLhtv-MYDrThR4-BpO3SwwbmNYLb1gIC_zFD3WHqW0oqJLnmI1wQCt4n5Tng';
     const player = new Spotify.Player({
       name: 'Hyporeal',
       getOAuthToken: cb => { cb(token); }
