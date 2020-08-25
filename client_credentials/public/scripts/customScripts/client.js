@@ -1,5 +1,13 @@
 import {GLTFLoader} from "https://unpkg.com/three@0.119.1/examples/jsm/loaders/GLTFLoader.js"
 
+
+var url = window.location.href
+var tokenArray = url.split('=')
+var tokenMain = tokenArray[1]
+
+var refreshToken = tokenArray[2]
+
+
 window.onSpotifyWebPlaybackSDKReady = () => {
 
 var beatAnimation = 0
@@ -14,7 +22,8 @@ var timbreSum1 = 0
 var timbreSum2 = 0
 
 
-function main() {
+function runVisuals() {
+
 
   const canvas2 = document.querySelector('#big');
   const canvas = document.querySelector('#c');
@@ -45,48 +54,60 @@ function main() {
   }
 
   function setupScene1() {
+      console.log('setup1')
     const sceneInfo = makeScene(document.querySelector('#box'));
     var geometry = new THREE.PlaneGeometry( 2, 1, planeDimension - 1, planeDimension - 1 );
 
     var material = new THREE.MeshBasicMaterial();
     var plane = new THREE.Mesh( geometry, material );
+    for(var i = 0; i < planeDimension; i++) {
+        plane.geometry.vertices[i].z = planeStoredBackRow[i]
+    }
     sceneInfo.scene.add(plane);
     plane.material.wireframe = true
     plane.rotation.set(-45, 0, 0)
     sceneInfo.camera.fov = 75
     sceneInfo.mesh = plane;
 
+    //sceneInfo.mesh.verticesNeedUpdate = true
     return sceneInfo;
   }
 
-  var beatLinePoints = []
+  var beatLinePoints = new THREE.Geometry()
 
-  beatLinePoints.push( new THREE.Vector3( 0, 0, 0 ) );
-  beatLinePoints.push( new THREE.Vector3( 0, 0, 0 ) );
+  //  beatLinePoints.vertices.push( new THREE.Vector3( 1, 0, 0 ) );
+  //  beatLinePoints.vertices.push( new THREE.Vector3( 0, 0, 0 ) );
 
   function setupScene2() {
       const sceneInfo = makeScene(document.querySelector('#pyramid'));
       sceneInfo.camera.position.z = 1000
-      var goalLineArray1 = [];
-      var goalLineArray2 = [];
+      var goalLineArray1 = new THREE.Geometry()
+      // var goalLineArray2 = [];
       
-      goalLineArray1.push(new THREE.Vector3(-1000, 100, 0), new THREE.Vector3(1000, 100, 0));
-      goalLineArray2.push(
-        new THREE.Vector3(-1000, -100, 0),
-        new THREE.Vector3(1000, -100, 0)
-      );
+      goalLineArray1.vertices.push(new THREE.Vector3(-1000, 100, 0));
+      goalLineArray1.vertices.push(new THREE.Vector3(1000, 100, 0));
       
-      var goalLineMaterial = new THREE.LineBasicMaterial({ color: 'white', linewidth: 10 });
-      var goalLine1Geometry = new THREE.BufferGeometry().setFromPoints(
-        goalLineArray1
-      );
-      var goalLine2Geometry = new THREE.BufferGeometry().setFromPoints(
-        goalLineArray2
-      );
-      var goalLine1 = new THREE.Line(goalLine1Geometry, goalLineMaterial);
-      var goalLine2 = new THREE.Line(goalLine2Geometry, goalLineMaterial);
-      // sceneInfo.scene.add(goalLine1);
-      // sceneInfo.scene.add(goalLine2);
+      // goalLineArray2.push(
+      //   new THREE.Vector3(-1000, -100, 0),
+      //   new THREE.Vector3(1000, -100, 0)
+      // );
+      
+      var goalLineMaterial = new MeshLineMaterial({color: 'white', lineWidth: 5})
+      // var goalLine1Geometry = new THREE.BufferGeometry().setFromPoints(
+      //   goalLineArray1
+      // );
+      // var goalLine2Geometry = new THREE.BufferGeometry().setFromPoints(
+      //   goalLineArray2
+      // );
+      var goalLine1 = new MeshLine()
+      // var goalLine2 = new MeshLine()
+      goalLine1.setGeometry(goalLineArray1)
+      //console.log(goalLine1)
+      // goalLine2.setGeometry(goalLine2Geometry)
+      var goalLine1Mesh = new THREE.Mesh(goalLine1.geometry, goalLineMaterial)
+      //sceneInfo.scene.add(goalLine1Mesh);
+      
+      //sceneInfo.scene.add(goalLine2);
 
       const radius = 10;
       const widthSegments = 10;
@@ -100,11 +121,17 @@ function main() {
       sceneInfo.scene.add(mesh);
       sceneInfo.mesh = mesh;
 
-      var beatLineMaterial = new THREE.LineBasicMaterial( { color: 'white', } );
-      var beatLineGeometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
-      var beatLine = new THREE.Line(beatLineGeometry, beatLineMaterial)
-      sceneInfo.scene.add(beatLine)
+      var beatLineMaterial = new MeshLineMaterial( { color: 'white', lineWidth: 5} );
+      var beatLine = new MeshLine()
+      beatLine.setGeometry(beatLinePoints)
+      
+      var beatLineMesh = new THREE.Mesh(beatLine.geometry, beatLineMaterial)
+
+      sceneInfo.scene.add(beatLineMesh)
+      sceneInfo.beatLineMaterial = beatLineMaterial
       sceneInfo.beatLine = beatLine
+      sceneInfo.beatLineMesh = beatLineMesh
+
       var beatLineArray = []
       sceneInfo.beatLineArray = beatLineArray
       return sceneInfo;
@@ -141,10 +168,11 @@ function main() {
       var plane = new THREE.Mesh( planeGeometry, planeMaterial );
       sceneInfo.planeWidth = planeWidth
       sceneInfo.planeHeight = planeHeight
-      //sceneInfo.scene.add(plane);
+      sceneInfo.scene.add(plane);
       plane.material.wireframe = true
       plane.rotation.set(0, 0, 0)
 
+      //sets squaresArray
       var q = 0
       var k = 0
       for (var i = 0; i < neoDimension * neoDimension; i++) {
@@ -162,6 +190,14 @@ function main() {
             squaresArray[i][j] = plane.geometry.vertices[i + j + k + q]
           }
         }
+      }
+      if (squaresArray.length === 0) {
+        console.log('true')
+        sceneInfo.boxWidth = 0
+      }
+      else {
+        console.log(squaresArray)
+        sceneInfo.boxWidth = Math.abs(squaresArray[0][0].x - squaresArray[0][1].x)
       }
       
       //Line
@@ -192,27 +228,30 @@ function main() {
     var neoLineArray = []
   function neoLineAnimation() {
 
-    
     if (neoStoredBarCounter !== barCounter) {
-      console.log('ran')
       neoStoredBarCounter = barCounter
       sceneInfo3.neoLinePoints = []
-      boxWidth = Math.abs(squaresArray[barCounter][0].x - squaresArray[barCounter][1].x)
-      boxDivisions = boxWidth/7
 
+      
+      boxDivisions = sceneInfo3.boxWidth/7
+      //console.log("neoLineAnim barCounter", barCounter)
+      sceneInfo3.pen.position.x = squaresArray[barCounter][0].x + (sceneInfo3.boxWidth/2)
+      sceneInfo3.pen.position.y = squaresArray[barCounter][0].y - (sceneInfo3.boxWidth/2)
       for (var i = 0; i < neoLineArray.length; i++) {
         sceneInfo3.scene.add(neoLineArray[i])
-        
       }
       neoLineArray = []
     }
 
     if (neoStoredSegCounter !== segmentCounter) {
       neoStoredSegCounter = segmentCounter
-      //console.log(sceneInfo3.neoLinePoints)
-      sceneInfo3.neoLinePoints.push(new THREE.Vector2 (squaresArray[barCounter][0].x + (timbreSum1 * boxDivisions) + (boxWidth/2), squaresArray[barCounter][0].y - (timbreSum2 * boxDivisions - (boxWidth/2))))
+      sceneInfo3.neoLinePoints.push(new THREE.Vector2 (squaresArray[barCounter][0].x 
+        + (timbreSum1 * boxDivisions) 
+        + (sceneInfo3.boxWidth/2), 
+        squaresArray[barCounter][0].y 
+        + (timbreSum2 * boxDivisions 
+        - (sceneInfo3.boxWidth/2))))
       
-      //console.log(boxWidth)
       twoCounter++
     }
 
@@ -224,8 +263,7 @@ function main() {
         var material = new THREE.LineBasicMaterial( { color : 'white' } );
         var line = new THREE.Line(geometry, material)
         neoLineArray.push(line)
-        //strokeArray.push(line)
-        //sceneInfo3.scene.add(line)
+
       }
       else {
         //console.log("curve")
@@ -235,8 +273,7 @@ function main() {
         var material = new THREE.LineBasicMaterial( { color : 'white' } );
         var splineObject = new THREE.Line( geometry, material );
         neoLineArray.push(splineObject)
-        // //strokeArray.push(splineObject)
-         //sceneInfo3.scene.add(splineObject)
+
       }
       sceneInfo3.neoLinePoints.shift()
       sceneInfo3.neoLinePoints.shift()
@@ -292,7 +329,7 @@ function main() {
         scene4Toggle = true
       })
 
-      console.log(plane)
+      //console.log(plane)
       //we are trying to make the sculpture accessible for manipulation outside of the load function
       
       return sceneInfo;
@@ -339,8 +376,8 @@ function main() {
   function glitchDistort (object) {
     
     if (glitchStoredBarCounter !== barCounter) {
+
       glitchStoredBarCounter = barCounter
-      //console.log('ran')
       glitchOriginalArray = object.geometry.vertices
       for (var i = 0; i < object.geometry.vertices.length; i++) {
 
@@ -352,7 +389,7 @@ function main() {
         object.geometry.verticesNeedUpdate = true
 
       }
-      glitchInterval = setInterval( function () {
+      setTimeout( function () {
         resetGlitchDistort(object)
       }, 200)
 
@@ -361,8 +398,8 @@ function main() {
 
   }
   function resetGlitchDistort(object) {
-    //console.log('run')
-    clearInterval(glitchInterval)
+
+    //clearInterval(glitchInterval)
     for (var i = 0; i < object.geometry.vertices.length; i++) {
       
       if (object.geometry.vertices[i].y > glitchPoint - glitchRange && object.geometry.vertices[i].y < glitchPoint + glitchRange ) {
@@ -431,32 +468,50 @@ function main() {
 
     renderer.render(scene, camera);
   }
-
+var test
+// setInterval(function() {
+//     test = !test
+// }, 100)
   function pitchPlaneAnimation () {
     var rowVertices = 143
     var columnVertices = 131
 
     if (planeStoredBackRow !== planeBackRowAnimation) {
-      planeStoredBackRow = planeBackRowAnimation
-      for(var i = 0; i < planeDimension; i++) {
-        sceneInfo1.mesh.geometry.vertices[i].z = planeStoredBackRow[i]
-      }
+        planeStoredBackRow = planeBackRowAnimation
+        //console.log('test')
+        setTest(false)
     }
-
     else {
+        setTest(true)
+    }
+    if (test === true) {
       for(var i = 0; i < planeDimension; i++) {
         if(sceneInfo1.mesh.geometry.vertices[i].z > 0) {
           sceneInfo1.mesh.geometry.vertices[i].z -= 0.01
         }
       }
     }
-    sceneInfo1.mesh.geometry.verticesNeedUpdate = true
+    else {
+        for(var i = 0; i < planeDimension; i++) {
+            sceneInfo1.mesh.geometry.vertices[i].z = planeStoredBackRow[i]
+          }
+      }
 
+ 
+    //Decay effect
+
+    sceneInfo1.mesh.geometry.verticesNeedUpdate = true
+    //Push backrow forward
     for(columnVertices; columnVertices >= 11; columnVertices -= planeDimension) {
       for(rowVertices; rowVertices > columnVertices; rowVertices--) {
         sceneInfo1.mesh.geometry.vertices[rowVertices].z = sceneInfo1.mesh.geometry.vertices[rowVertices - planeDimension].z
       }
     }
+  }
+
+  function setTest(bool) {
+      test = bool
+
   }
 
   var lineCounter = 0
@@ -480,28 +535,34 @@ function main() {
     if (frustum.intersectsObject(sceneInfo2.mesh) === false) {
       //need to make this not hardcoded
       sceneInfo2.mesh.position.x = -500
-      sceneInfo2.mesh.position.y = 0
+      //sceneInfo2.mesh.position.y = 0
       
       for (var i = lineCounter; i >= 0; i--) {
         sceneInfo2.scene.remove(sceneInfo2.beatLineArray[i])
       }
 
       lineCounter = 0
-      beatLinePoints = []
-      beatLinePoints.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
-      beatLinePoints.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
+      beatLinePoints = new THREE.Geometry()
+      beatLinePoints.vertices.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
+      beatLinePoints.vertices.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
     
       sceneInfo2.beatLineArray = []
+      //console.log(sceneInfo2.beatLineArray)
     }
     else {
       //console.log(sceneInfo2.beatLineArray)
-          beatLinePoints.shift()
-          beatLinePoints.push(new THREE.Vector3(sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0))
-          sceneInfo2.beatLine.geometry = new THREE.BufferGeometry().setFromPoints(beatLinePoints)
-          sceneInfo2.beatLineArray[lineCounter] = new THREE.Line(sceneInfo2.beatLine.geometry, sceneInfo2.beatLine.material)
+          //beatLinePoints.vertices.shift()
+          beatLinePoints.vertices.push(new THREE.Vector3(sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0))
+          //console.log(beatLinePoints)
+          //beatLinePoints.vertices.push(new THREE.Vector3(1, 2, 0))
+          sceneInfo2.beatLine = new MeshLine()
+          sceneInfo2.beatLine.setGeometry(beatLinePoints)
+          sceneInfo2.beatLineArray[lineCounter] = new THREE.Mesh(sceneInfo2.beatLine.geometry, sceneInfo2.beatLineMaterial)
+          //console.log(sceneInfo2.beatLineArray)
           sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
           lineCounter++
-          
+          //sceneInfo2.beatLineMesh.verticesNeedUpdate = true
+
           //Physics
           
           acceleration = 800 / (beatAnimation - sceneInfo2.mesh.position.y)
@@ -540,7 +601,7 @@ function main() {
     time *= 0.001;
     pitchPlaneAnimation()
     beatLineAnimation()
-    neoLineAnimation()
+    //neoLineAnimation()
     glitchDistort(sceneInfo4.plane)
 
     if(scene4Toggle === true) {
@@ -568,8 +629,7 @@ function main() {
 
 }
 
-//main();
-function setSquaresArray (bars) {
+function getNeoDimension (bars) {
   var result
   //console.log(bars.length)
   if (Math.sqrt(bars.length) % 1 !== 0 ) {
@@ -582,7 +642,7 @@ function setSquaresArray (bars) {
     return Math.sqrt(result)
   }
 }
-
+runVisuals()
     var trackPosition
     var initialMilliseconds
     var initialDate
@@ -601,12 +661,15 @@ function setSquaresArray (bars) {
     function findNextDivision (divisionNameStart, divisionCounter, divisionName) {
       var i = 0
       var truthCond = true
-      //console.log("New call")
+      //console.log("New call", divisionName)
       
       while(truthCond === true && i < divisionNameStart.length) {
         if (divisionNameStart[i] > trackPosition) {
           divisionCounter = i
-          //console.log(divisionName + "Counter", divisionCounter)
+          if (divisionName === 'bar') {
+            // console.log("Find next division", divisionName + "Counter", divisionCounter)
+          }
+          
           truthCond = false;
           return divisionCounter
         }
@@ -636,10 +699,11 @@ function setSquaresArray (bars) {
        sectionCounter++
        console.log("New section")
      }
-     if (elapsedTime + elapsedMilliseconds >= trackData.barsStart[barCounter] - syncCompensation) {
+     if (elapsedTime + elapsedMilliseconds >= trackData.barsStart[barCounter] - syncCompensation && barCounter !== trackData.bars.length - 1) {
+        //console.log(trackData.bars.length)
        barCounter++
-       console.log("New bar")
-       console.log("barCounter", barCounter)
+
+       //console.log("check for hits barCounter", barCounter)
      }
      if (elapsedTime + elapsedMilliseconds >= trackData.tatumsStart[tatumCounter] - syncCompensation) {
        tatumCounter++
@@ -683,8 +747,8 @@ function setSquaresArray (bars) {
 
       timbreSum1 = Math.ceil(timbreSum1 * .4)
       timbreSum2 = Math.ceil(timbreSum2 * .4)
-      // console.log(timbreSum1)
-      // console.log(timbreSum2)
+    //    console.log("timbreSum1", timbreSum1)
+    //    console.log("timberSum2", timbreSum2)
 
 
       segmentCounter++
@@ -697,8 +761,9 @@ function setSquaresArray (bars) {
       return acc *= val
 
     }
-    function timerControl(paused) {
 
+    function timerControl(paused) {
+        // console.log('timerControl')
       if (paused === false) {
         startTimer()
       }
@@ -715,6 +780,7 @@ function setSquaresArray (bars) {
       segmentCounter = findNextDivision(trackData.segmentsStart, segmentCounter, "segment")
       tatumCounter = findNextDivision(trackData.tatumsStart, tatumCounter, "tatum")
       beatCounter = findNextDivision(trackData.beatsStart, beatCounter, "beat")
+    //   console.log("startTimer barCounter", barCounter)
       barCounter = findNextDivision(trackData.barsStart, barCounter, "bar")
       sectionCounter = findNextDivision(trackData.sectionsStart, sectionCounter, "section")
 
@@ -738,15 +804,25 @@ function setSquaresArray (bars) {
         clearInterval(id)
       }
 
-    const token = 'BQDMP5fT12iIiWppRH1tO0_UnBFeYs_o2upXJWklq6jiXFZ_9JadqEFP-NdQznlB3SNMgDMlrafwOdMwI3MOEzxOJh0yWl2TuPLdkKmLhtv-MYDrThR4-BpO3SwwbmNYLb1gIC_zFD3WHqW0oqJLnmI1wQCt4n5Tng';
-    const player = new Spotify.Player({
+    
+    var player = new Spotify.Player({
       name: 'Hyporeal',
-      getOAuthToken: cb => { cb(token); }
+      getOAuthToken: callback => { 
+        var refreshURL = './refresh_token?refresh_token=' + refreshToken  
+        fetch(refreshURL, {
+            method: 'GET'
+        })
+        .then(res => res.json())
+        .then(data => {
+            tokenMain = data.access_token
+            return callback(tokenMain)
+        }) 
+        }
     });
 
     // Error handling
     player.addListener('initialization_error', ({ message }) => { console.error(message); });
-    player.addListener('authentication_error', ({ message }) => { console.error(message); });
+    player.addListener('authentication_error', ({ message }) => {console.error(message);});
     player.addListener('account_error', ({ message }) => { console.error(message); });
     player.addListener('playback_error', ({ message }) => { console.error(message); });
 
@@ -781,13 +857,18 @@ function setSquaresArray (bars) {
               trackData = new songData(data)
               return trackData
             })
-            .then(trackData => neoDimension = setSquaresArray(trackData.bars))
-            .then(timerControl(state['paused']))
-            .then(res => main())
+            .then(trackData => neoDimension = getNeoDimension(trackData.bars))
+            .then(res => timerControl(state['paused']))
+            //.then(res => main())
 
         }
         else {
-          timerControl(state['paused'])
+            trackPosition = state['position']
+            elapsedTime = trackPosition
+            if (trackData !== undefined) {
+                timerControl(state['paused'])
+            }
+          
         }
     });
 var trackPositionQueryRate = 1000
@@ -802,7 +883,7 @@ var trackPositionQuery
         trackPosition = state['position']
         elapsedTime = trackPosition
         //console.log("Query trackPosition", trackPosition)
-        if (state['paused'] === false) {
+        if (state['paused'] === false && trackData !== undefined) {
           startTimer()
         }
       })
