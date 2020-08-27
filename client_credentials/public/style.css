@@ -10,7 +10,8 @@ body {
     width: 100vw;
     height: 100vh;
     display: block;
-    background-image: url('tunnel.jpg');
+    /* background-image: url('tunnel.jpg'); */
+    background-color: black;
     z-index: -2;
   }
 
@@ -29,9 +30,11 @@ body {
   .diagram {
     display: inline-block;
     width: 50%;
+
     /*I'll need to fix this not being responsive*/
     height: 400px;
     z-index: 1;
+    
 
     
   }
