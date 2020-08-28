@@ -14,7 +14,7 @@ var path = require('path');
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
-const port = 8080
+const port = process.env.port || 8080
 //Set up webserver
 
 var client_id = '***REMOVED***'; // Your client id

@@ -1,0 +1,1 @@
+web: node "spotify app/server.js"
