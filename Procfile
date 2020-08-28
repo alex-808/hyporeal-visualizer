@@ -1,1 +1,1 @@
-web: node "spotify app/server.js"
+web: node "spotifyapp/server.js"
