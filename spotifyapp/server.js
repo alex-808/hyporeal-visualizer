@@ -14,7 +14,7 @@ var path = require('path');
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
-const port = process.env.port || 8080
+const PORT = process.env.PORT || 8080
 //Set up webserver
 
 var client_id = 'f027df0d4399439bb2e13a2aebee6a4b'; // Your client id
@@ -183,7 +183,7 @@ app.post('/', function(req, res)  {
     .then(data => res.send(data))
 })
 
-app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
+app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));
 
 var audio_analysis;
 
