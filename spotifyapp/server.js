@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 8080
 
 var client_id = 'f027df0d4399439bb2e13a2aebee6a4b'; // Your client id
 var client_secret = 'b4ebbc598a4f466fac41e6a4d3ecadba'; // Your secret
-var redirect_uri = 'http://localhost:8080/callback'; // Your redirect uri
+var redirect_uri = 'http://localhost:' + PORT +'/callback'; // Your redirect uri
 
 var stateKey = 'spotify_auth_state';
 
