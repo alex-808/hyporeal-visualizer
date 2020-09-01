@@ -7,6 +7,13 @@ import { GlitchPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postpr
 import { FilmPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/FilmPass.js';
 import { ShaderPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/ShaderPass.js';
 import { DotScreenPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/DotScreenPass.js';
+import { FXAAShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/FXAAShader.js'
+
+import { TexturePass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/TexturePass.js';
+import { ClearPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/ClearPass.js';
+import { MaskPass, ClearMaskPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/MaskPass.js';
+import { CopyShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/CopyShader.js';
+
 
 var url = window.location.href
 var tokenArray = url.split('=')
@@ -15,7 +22,6 @@ var refreshToken = tokenArray[1]
 
 
 window.addEventListener('unload', function(event) {
-  console.log('this')
   fetch('./session_destroy', {
     method: 'POST'
   })
@@ -42,18 +48,23 @@ function runVisuals() {
 
   const canvas2 = document.querySelector('#big');
   const canvas = document.querySelector('#c');
+  
   const renderer2 = new THREE.WebGLRenderer({canvas, alpha: true, antialias: true});
 
   const renderer = new THREE.WebGLRenderer({canvas, alpha: false, antialias: true});
+
+  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer2.setPixelRatio(window.devicePixelRatio)
 
   var analyglyphEffect = new AnaglyphEffect(renderer)
   var analyglyphEffect2 = new AnaglyphEffect(renderer2)
 
 
+
   var composer1 = new EffectComposer(renderer)
   var composer2 = new EffectComposer(renderer)
   var composer3 = new EffectComposer(renderer)
-  var composer4 = new EffectComposer(renderer2)
+
 
 
   var glitchPass = new GlitchPass();
@@ -64,6 +75,8 @@ function runVisuals() {
   
   var dotScreenPass = new DotScreenPass( new THREE.Vector2( 0,0 ), .75, 1 );
   dotScreenPass.enabled = false
+
+  // var FXAAPass = new ShaderPass(FXAAShader)
 
 
 
@@ -117,15 +130,17 @@ function runVisuals() {
     return sceneInfo;
   }
 
-  var beatLinePoints = new THREE.Geometry()
-
-
+  var beatLinePoints = []
 
   function setupScene2() {
       const sceneInfo = makeScene(document.querySelector('#pyramid'));
+
+      sceneInfo.scene.remove(camera)
       sceneInfo.camera.position.z = 1000
       var goalLineArray1 = new THREE.Geometry()
       // var goalLineArray2 = [];
+      var camera = new THREE.OrthographicCamera( sceneInfo.elem.width / - 2, sceneInfo.elem.width / 2, sceneInfo.elem.height / 2, sceneInfo.elem.height / - 2, 1, 1000 );
+      sceneInfo.scene.add( camera );
       
       goalLineArray1.vertices.push(new THREE.Vector3(-1000, 100, 0));
       goalLineArray1.vertices.push(new THREE.Vector3(1000, 100, 0));
@@ -134,12 +149,13 @@ function runVisuals() {
       composer2.addPass( renderPass2 );
       composer2.addPass( glitchPass );
       composer2.addPass( filmPass );
+        // composer2.addPass(FXAAPass)
       // goalLineArray2.push(
       //   new THREE.Vector3(-1000, -100, 0),
       //   new THREE.Vector3(1000, -100, 0)
       // );
       
-      var goalLineMaterial = new MeshLineMaterial({color: 'white', lineWidth: 50})
+      var goalLineMaterial = new MeshLineMaterial({color: 'white', lineWidth: 5})
       // var goalLine1Geometry = new THREE.BufferGeometry().setFromPoints(
       //   goalLineArray1
       // );
@@ -155,7 +171,7 @@ function runVisuals() {
       
       //sceneInfo.scene.add(goalLine2);
 
-      const radius = .1;
+      const radius = 10;
       const widthSegments = 10;
       const heightSegments = 10;
       const geometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
@@ -167,10 +183,14 @@ function runVisuals() {
       sceneInfo.scene.add(mesh);
       sceneInfo.mesh = mesh;
 
-      var beatLineMaterial = new MeshLineMaterial( { color: 'white', lineWidth: 5} );
-      var beatLine = new MeshLine()
-      beatLine.setGeometry(beatLinePoints)
+      var beatLineMaterial = new MeshLineMaterial( { color: 'white', lineWidth: 2, sizeAttenuation: 1} );
+      // var beatLineMaterial = new THREE.MeshBasicMaterial( { color: 'white'} );
       
+      var beatLine = new MeshLine()
+      // beatLinePoints.push( new THREE.Vector2( 1, 1, 0 ) );
+      // beatLinePoints.push( new THREE.Vector2( 10, 1, 0 ) );
+      // beatLine.setVertices(beatLinePoints)
+
       var beatLineMesh = new THREE.Mesh(beatLine.geometry, beatLineMaterial)
 
       sceneInfo.scene.add(beatLineMesh)
@@ -180,6 +200,7 @@ function runVisuals() {
 
       var beatLineArray = []
       sceneInfo.beatLineArray = beatLineArray
+
       return sceneInfo;
     }
     
@@ -241,18 +262,34 @@ function runVisuals() {
     }
 
     var scene4Toggle = false
+
     function setupScene4() {
 
       const sceneInfo = makeScene(document.querySelector('#dodecahedron'));
+      var background = new THREE.TextureLoader().load('./tunnel.jpg')
+      background.minFilter = THREE.LinearFilter;
+      var clearPass = new ClearPass()
+      var clearMaskPass = new ClearMaskPass()
 
-
-      var dimensions = 5
-      var bufferTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
+      var texturePass = new TexturePass( background );
+      var outputPass = new ShaderPass( CopyShader );
+      
+      var bufferTexture = new THREE.WebGLRenderTarget( window.innerHeight, window.innerWidth, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
       var bufferScene = new THREE.Scene();
       bufferScene.background = new THREE.Color('white')
       var bufferLight = new THREE.DirectionalLight(0xffffff, 0.5 )
-      bufferScene.add(bufferLight)
+      const fov = 45;
+      const aspect = 2;  // the canvas default
+      const near = 0.1;
+      const far = 1000;
+      const bufferCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+      bufferCamera.position.set(0, 0, 2);
+      bufferCamera.lookAt(0, 0, 0);
+      sceneInfo.bufferCamera = bufferCamera
+      bufferScene.add(bufferCamera)
 
+      bufferScene.add(bufferLight)
+      var maskPass = new MaskPass(bufferScene, bufferCamera)
  
       var geometry = new THREE.BoxGeometry(1, 1, 1);
       var material = new THREE.MeshBasicMaterial( { color: 'blue' } );
@@ -261,39 +298,66 @@ function runVisuals() {
       sceneInfo.bufferTexture = bufferTexture
       sceneInfo.bufferScene = bufferScene
 
+      var composer4 = new EffectComposer(renderer2, bufferTexture)
+      sceneInfo.composer4 = composer4
       var renderPass4 = new RenderPass(sceneInfo.bufferScene, sceneInfo.camera)
       composer4.addPass( renderPass4 );
       // // composer4.addPass(filmPass)
       composer4.addPass(dotScreenPass)
+      composer4.addPass( clearPass );
+      composer4.addPass( maskPass );
+      composer4.addPass( texturePass );
+      composer4.addPass( clearMaskPass );
+      composer4.addPass( outputPass );
 
+      var geometrySegments = 100
+      // var geometrySegments = 1
 
-      var geometry = new THREE.PlaneGeometry(dimensions, dimensions , 100, 100);
+      var geometry = new THREE.PlaneGeometry(canvas.width/60, canvas.height/60 , geometrySegments, geometrySegments);
+      // var geometry = new THREE.PlaneGeometry(2, 2 , 100, 100);
       var material = new THREE.MeshBasicMaterial( {map: bufferTexture});
       var plane = new THREE.Mesh( geometry, material );
       plane.position.z = -1
       sceneInfo.scene.add( plane );
+      sceneInfo.geometry = geometry
       sceneInfo.plane = plane
 
+      // for (var i = 0; i < plane.geometry.vertices.length; i++) {
+      //   originalGeometry.push(plane.geometry.vertices[i])
+      // }
 
+      var originalGeometry = JSON.parse(JSON.stringify(plane.geometry.vertices))
+      
+      plane.originalGeometry = originalGeometry
+      // console.log(plane.geometry.vertices === originalGeometry)
+
+
+      var sculptureArray = [
+        './venus3.gltf',
+        './youngwarrior.gltf',
+        './SculptureBlue.gltf'
+      ]
       var sculpture
+      var light
       const loader = new GLTFLoader()
-      loader.load("./Sculpture2.gltf", (object) => {
-        sculpture = object.scene.children[2]
+      loader.load(sculptureArray[getRandomInt(3)], (object) => {
+        
+        sculpture = object.scene
+        console.log(sculpture)
 
-        sculpture.rotation.x = 9.5
-        sculpture.position.x = 0
-        sculpture.position.y = 5
-        sculpture.position.z = -10
-        sculpture.scale.x = 0.1
-        sculpture.scale.y = 0.1
-        sculpture.scale.z = 0.1
-        //sculpture.material.wireframe = true
+
         sceneInfo.sculpture = sculpture
         sceneInfo.bufferScene.add(sculpture)
         scene4Toggle = true
+        // console.log(object)
       })
       return sceneInfo;
     }
+
+
+   
+
+
 
     var neoStoredBarCounter = 0
     var neoStoredSegCounter = 0
@@ -306,16 +370,17 @@ function runVisuals() {
 
     var neoLineArray = []
     var neoParagraphArray = []
+    var neoMaxWords = 250
     var squaresArray = []
     var sectionColors = [
       'red',
       'blue'
     ]
     var neoToggle = true
+    var glitchTheBar = false
+    var allowGlitchBars = 0
+
   function neoLineAnimation() {
-
-
-
     if(storedNeoDimension !== neoDimension) {
 
       storedNeoDimension = neoDimension
@@ -353,58 +418,96 @@ function runVisuals() {
       
     }
 
-    if (neoStoredSectionCounter !== sectionCounter && sectionCounter) {
-      // console.log('sectionCounter', sectionCounter)
-      neoStoredSectionCounter = sectionCounter
-      var random = getRandomInt(5)
+    function getNewEffect(maxRandom) {
+      var random = getRandomInt(maxRandom)
       switch(random) {
         case 0:
+          console.log('fader')
           totalFader()
           break
         case 1:
+          console.log('glitch')
           totalGlitch()
           break
         case 2:
+          console.log('film')
           totalFilm()
           break
         case 3:
-          totalFilm()
-          totalFader()
-          break
-        case 4:
+          console.log('none and maybe fader')
           totalNone()
           if(getRandomInt(2) === 0) {
             totalFader()
           }
           break
+        case 4:
+          console.log('analglyph')
+          setAnalglyphEffect = 'analglyph'
+          totalFader()
+          break
           
       }
+
+    }
+    if(allowGlitchBars < 1) {
+      
+      allowGlitchReset = true
+
+    }
+    if (neoStoredSectionCounter !== sectionCounter && sectionCounter && trackData) {
+      // console.log('sectionCounter', sectionCounter)
+      neoStoredSectionCounter = sectionCounter
+      getNewEffect(5)
+      if(getRandomInt(2) === 0) {
+        console.log('glitch reset disabled')
+        allowGlitchReset = false
+        allowGlitchBars = 4
+      }
+
+      neoToggle = false
+      //console.log('ran')
+      //neoStoredSectionCounter++
+      neoStoredBeatCounter = beatCounter
+      var segColorIndex = timbreSum1 % 2 === 0 ? planeMaterialRed : planeMaterialBlue
+      
+      
+      var plane = new THREE.Mesh( planeGeometry, segColorIndex );
+      plane.position.x = squaresArray[neoStoredBarCounter][0].x + sceneInfo3.boxWidth/2
+      plane.position.y = squaresArray[neoStoredBarCounter][0].y - sceneInfo3.boxWidth/2
+      plane.position.z = squaresArray[neoStoredBarCounter][0].z - 0.01
+      neoParagraphArray.push(plane)
+      sceneInfo3.scene.add(plane)
 
       neoToggle = true
       
     }
+    var planeGeometry = new THREE.PlaneBufferGeometry( sceneInfo3.boxWidth, sceneInfo3.boxWidth);
+    var planeMaterialBlue = new THREE.MeshBasicMaterial({color: 'blue'});
+    var planeMaterialRed = new THREE.MeshBasicMaterial({color: 'red'});
+
     
-if (trackData !== undefined) {
-  if (trackData.sectionsStart[neoStoredSectionCounter + 1] === trackData.beatsStart[beatCounter] && neoToggle === true) {
-    neoToggle = false
-    //console.log('ran')
-    //neoStoredSectionCounter++
-    neoStoredBeatCounter = beatCounter
-    var segColorIndex = timbreSum1 % 2 === 0 ? 0 : 1
-    var planeGeometry = new THREE.PlaneGeometry( sceneInfo3.boxWidth, sceneInfo3.boxWidth, 10, 10);
-    var planeMaterial = new THREE.MeshBasicMaterial({color: sectionColors[segColorIndex]});
-    var plane = new THREE.Mesh( planeGeometry, planeMaterial );
-    plane.position.x = squaresArray[neoStoredBarCounter][0].x + sceneInfo3.boxWidth/2
-    plane.position.y = squaresArray[neoStoredBarCounter][0].y - sceneInfo3.boxWidth/2
-    plane.position.z = squaresArray[neoStoredBarCounter][0].z - 0.01
-    neoParagraphArray.push(plane)
-    sceneInfo3.scene.add(plane)
-  
-  }
-}
 
+    if (trackData !== undefined) {
+      if (trackData.sectionsStart[neoStoredSectionCounter + 1] === trackData.beatsStart[beatCounter] && neoToggle === true) {
+        neoToggle = false
+    
 
-    neoStoredBeatCounter = beatCounter
+        //console.log('ran')
+        //neoStoredSectionCounter++
+        neoStoredBeatCounter = beatCounter
+        var segColorIndex = timbreSum1 % 2 === 0 ? planeMaterialRed : planeMaterialBlue
+        
+        
+        var plane = new THREE.Mesh( planeGeometry, segColorIndex );
+        plane.position.x = squaresArray[neoStoredBarCounter][0].x + sceneInfo3.boxWidth/2
+        plane.position.y = squaresArray[neoStoredBarCounter][0].y - sceneInfo3.boxWidth/2
+        plane.position.z = squaresArray[neoStoredBarCounter][0].z - 0.01
+        neoParagraphArray.push(plane)
+        sceneInfo3.scene.add(plane)
+      
+      }
+    }
+
     // if (neoStoredBarCounter > barCounter) {
     //   for (var i = neoStoredBarCounter; i > -1 ; i-- ) {
     //     sceneInfo3.scene.remove(neoParagraphArray[i])
@@ -412,7 +515,23 @@ if (trackData !== undefined) {
     //   neoStoredBarCounter = barCounter
     // }
     if (neoStoredBarCounter !== barCounter && barCounter !== undefined) {
+      // allowGlitchReset = true
+      allowGlitchBars--
       neoStoredBarCounter = barCounter
+      glitchDistort(sceneInfo4.plane)
+      if(getRandomInt(4) === 0) {
+        getNewEffect(2)
+
+      }
+
+      if(getRandomInt(4) === 0) {
+        glitchTheBar = 4
+
+      }
+
+
+
+      // bigScreen(sceneInfoArray[getRandomInt(4)])
 
       sceneInfo3.neoLinePoints = []
 
@@ -425,9 +544,24 @@ if (trackData !== undefined) {
         sceneInfo3.scene.add(neoLineArray[i])
         //delete neoLineArray[i]
       }
-      neoLineArray = []
 
+      neoLineArray = []
+      if(neoParagraphArray.length > neoMaxWords) {
+        console.log(neoParagraphArray.length - neoMaxWords)
+        for(var i = 0; i = neoParagraphArray.length - neoMaxWords; i++) {
+          sceneInfo3.scene.remove(neoParagraphArray[0])
+          neoParagraphArray.shift()
+          console.log('removed extra')
+        }
+      }
     }
+
+    if (neoStoredBeatCounter !== beatCounter && glitchTheBar > 0) {
+      glitchTheBar--
+      glitchDistort(sceneInfo4.plane)
+    }
+
+    neoStoredBeatCounter = beatCounter
 
     if (neoStoredSegCounter !== segmentCounter) {
       neoStoredSegCounter = segmentCounter
@@ -440,27 +574,26 @@ if (trackData !== undefined) {
       
       twoCounter++
     }
-
+    var material = new THREE.LineBasicMaterial( { color : 'white' } );
     if (twoCounter === 3) {
 
       if (timbreSum1 % 2 === 0) {
         //console.log("line")
         var geometry = new THREE.BufferGeometry().setFromPoints(sceneInfo3.neoLinePoints)
-        var material = new THREE.LineBasicMaterial( { color : 'white' } );
         var line = new THREE.Line(geometry, material)
         neoLineArray.push(line)
         neoParagraphArray.push(line)
-
+        geometry.dispose()
       }
       else {
         //console.log("curve")
         var curve = new THREE.SplineCurve( sceneInfo3.neoLinePoints );
         var points = curve.getPoints( 50 );
         var geometry = new THREE.BufferGeometry().setFromPoints(points)
-        var material = new THREE.LineBasicMaterial( { color : 'white' } );
         var splineObject = new THREE.Line( geometry, material );
         neoLineArray.push(splineObject)
         neoParagraphArray.push(splineObject)
+        geometry.dispose()
 
       }
       // need to ensure that these points are being cleaned up properly after every 3
@@ -486,6 +619,7 @@ if (trackData !== undefined) {
     }
 
   }
+
 
   setInterval(function() {
     flowToggle = !flowToggle
@@ -549,10 +683,15 @@ var flowToggle = true
 // need to set it so if there is a skip in song, the timeouts are cleared
   function totalFilm() {
 
-      var random = getRandomInt(1)
+      var random = getRandomInt(2)
+      console.log("random", random)
       if(random === 0) {
         totalFilmDuration = 1000
         dotScreenPass.enabled = true
+      }
+      else {
+        totalFilmDuration = 10000
+        totalFader()
       }
 
       setAnalglyphEffect = 'effect'
@@ -563,7 +702,7 @@ var flowToggle = true
         filmPass.enabled = false
         dotScreenPass.enabled = false
         RandomIntToggle = true
-        totalFilmDuration = 10000
+        
       }, totalFilmDuration)
       
   }
@@ -573,8 +712,8 @@ var flowToggle = true
     effectType = 'film'
     console.log('none')
     setTimeout(function() {
-      setAnalglyphEffect = 'analglyph'
-      console.log('analglyph')
+      // setAnalglyphEffect = 'analglyph'
+      // console.log('analglyph')
     }, 10000)
     
   
@@ -589,34 +728,29 @@ var analglyphFadeRate = .003
 var analglyphFadeLength = 2
 
   function totalFader() {
-    analglyphStoredBarCounter = barCounter
-    if (getRandomInt(2) === 0) {
-        sceneInfo4.bufferScene.background = new THREE.Color('blue')
-        analglyphBarLength = 2
-        checkForUndoAnalGlyphControl =  true
 
-        // if (getRandomInt(2) === 0 && sectionCounter >= trackData.sections.length / 2) {
-        //   console.log('perma')
-        //   checkForUndoAnalGlyphControl =  false
-        // }
+    // analglyphStoredBarCounter = barCounter
+    // if (getRandomInt(2) === 0) {
+    //     sceneInfo4.bufferScene.background = new THREE.Color('blue')
+    //     analglyphBarLength = 2
+    //     checkForUndoAnalGlyphControl =  true
+
+
         
-    }
-    else {
-       analglyphFadeRate = (1 / ((trackData.barsStart[barCounter + 1] - trackData.barsStart[barCounter]) / 5)) * analglyphFadeLength
-      analglyphBarLength = 4
-      checkForUndoAnalGlyphControl =  true
-        fadeInterval = setInterval(function() {
-          if (sceneInfo4.bufferScene.background.r > 0) {
-            sceneInfo4.bufferScene.background.r -= analglyphFadeRate
+    // }
+    // else {
+    //    analglyphFadeRate = (1 / ((trackData.barsStart[barCounter + 1] - trackData.barsStart[barCounter]) / 5)) * analglyphFadeLength
+    //   analglyphBarLength = 4
+    //   checkForUndoAnalGlyphControl =  true
+    //     fadeInterval = setInterval(function() {
+    //       if (sceneInfo4.bufferScene.background.r > 0) {
+    //         sceneInfo4.bufferScene.background.r -= analglyphFadeRate
 
 
-          }
-        }, 5)
-        // if (getRandomInt(2) === 0 && sectionCounter >= trackData.sections.length / 2) {
-        //   console.log('perma')
-        //   checkForUndoAnalGlyphControl =  false
-        // }
-      }
+    //       }
+    //     }, 5)
+
+    //   }
         
     }
 
@@ -674,45 +808,106 @@ var analglyphFadeLength = 2
       }
 
   }
+
   var glitchPoint = 0
-  var glitchRange = 1
-  var glitchAmount = .1
+  var glitchRange = .05
+  var glitchAmount = .05
   var glitchStoredBarCounter
-  function glitchDistort (object) {
+  var glitchStoredBeatCounter = beatCounter
+  var directionArray = [
+    'x',
+    'y',
+    'z'
+  ]
+  var distortCounter = 0
+  var allowGlitchReset = true
+
+  function glitchDistort (object, direction) {
+
     
-    if (glitchStoredBarCounter !== barCounter) {
+    // console.log('distort', distortCounter)
+    distortCounter++
+
+      var negative
+      if (getRandomInt(2) === 0) {
+        negative = -1
+      }
+      else {
+        negative = 1
+      }
+      direction = directionArray[getRandomInt(3)]
+      glitchRange = (getRandomInt(10) + 1) / 10
+
+      glitchPoint = Math.random() * negative
+
+
+
+      var grain
+      switch(direction) {
+        case direction = 'x':
+          grain = 'y'
+          glitchAmount = .05
+          break
+        case direction = 'y':
+          grain = 'x'
+          glitchAmount = .05
+          break
+        case direction = 'z':
+          grain = 'y'
+          glitchAmount = .5
+          break
+      }
       // console.log('glitched')
       glitchStoredBarCounter = barCounter
+
       for (var i = 0; i < object.geometry.vertices.length; i++) {
 
-        if (object.geometry.vertices[i].y > glitchPoint - glitchRange && object.geometry.vertices[i].y < glitchPoint + glitchRange ) {
+        if (object.geometry.vertices[i][grain] > glitchPoint - glitchRange && object.geometry.vertices[i][grain] < glitchPoint + glitchRange ) {
 
-            object.geometry.vertices[i].x += glitchAmount
+            object.geometry.vertices[i][direction] += glitchAmount
         }
 
         object.geometry.verticesNeedUpdate = true
 
       }
-      setTimeout( function () {
-        resetGlitchDistort(object)
-      }, 200)
+      if(allowGlitchReset === true) {
+        setTimeout( function () {
+          resetGlitchDistort(object, direction, grain, glitchPoint, glitchRange, glitchAmount)
+        }, 100)
+      }
 
-    }
+
+
+    
 
 
   }
-  function resetGlitchDistort(object) {
+  var undistortCounter = 0
+  function resetGlitchDistort(object, direction, grain, glitchPoint, glitchRange, glitchAmount) {
 
+    // object.geometry = sceneInfo4.geometry
+    // console.log('undistort', undistortCounter)
+    undistortCounter++
 
     for (var i = 0; i < object.geometry.vertices.length; i++) {
-      
-      if (object.geometry.vertices[i].y > glitchPoint - glitchRange && object.geometry.vertices[i].y < glitchPoint + glitchRange ) {
+        object.geometry.vertices[i].x = object.originalGeometry[i].x  
+        object.geometry.vertices[i].y = object.originalGeometry[i].y  
+        object.geometry.vertices[i].z = object.originalGeometry[i].z
 
-        object.geometry.vertices[i].x -= glitchAmount
-    }
+
+      
+    //   if (object.geometry.vertices[i][grain] > glitchPoint - glitchRange && object.geometry.vertices[i][grain] < glitchPoint + glitchRange ) {
+
+
+    //     object.geometry.vertices[i][direction] -= glitchAmount
+    // }
           
       }
       object.geometry.verticesNeedUpdate = true
+      object.updateMatrix()
+  }
+
+  function bubbleDistort(object) {
 
   }
 
@@ -731,8 +926,32 @@ var analglyphFadeLength = 2
   const sceneInfo3 = setupScene3();
   const sceneInfo4 = setupScene4();
 
+  var sceneInfoArray = [
+    sceneInfo1,
+    sceneInfo2,
+    sceneInfo3,
+    sceneInfo4
+  ]
+
+  function bigScreen(sceneInfo) {
+    for (var i = 0; i < sceneInfoArray.length; i++) {
+      if (sceneInfoArray[i] !== sceneInfo) {
+        sceneInfoArray[i].elem.style.width = '0%'
+        sceneInfoArray[i].elem.style.height = '0%'
+      }
+      else {
+        sceneInfoArray[i].elem.style.width = '100%'
+        sceneInfoArray[i].elem.style.height = '100%'
+      }
+    } 
+  }
+
+  
 
   function resizeRendererToDisplaySize(renderer) {
+    if(renderer === renderer2) {
+      return
+    }
     const canvas = renderer.domElement;
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -742,6 +961,7 @@ var analglyphFadeLength = 2
     }
     return needResize;
   }
+  
   var setAnalglyphEffect = 'analglyph'
   var effectType = 'film'
   function renderSceneInfo(sceneInfo) {
@@ -761,7 +981,7 @@ var analglyphFadeLength = 2
     if (isOffscreen) {
       return;
     }
-
+    // console.log(renderer)
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
 
@@ -770,20 +990,26 @@ var analglyphFadeLength = 2
     renderer.setViewport(left, positiveYUpBottom, width, height);
 
     if(sceneInfo === sceneInfo4) {
+      var time = performance.now() * 0.001 + 6000;
       renderer2.setScissor(left, positiveYUpBottom, width, height);
       renderer2.setViewport(left, positiveYUpBottom, width, height);
       sceneInfo4.plane.geometry.verticesNeedUpdate = true
       //renderer2 renders to bufferTexture
-      renderer2.setRenderTarget(sceneInfo4.bufferTexture)
-      renderer2.render(sceneInfo4.bufferScene, camera)
+      // renderer2.setRenderTarget(sceneInfo4.bufferTexture)
+      // renderer2.render(sceneInfo4.bufferScene, sceneInfo4.bufferCamera)
+
+      // composer4.setRenderTarget(sceneInfo4.bufferTexture)
+      renderer2.clear()
+      sceneInfo4.composer4.render()
       //set target to the main scene to render the plane with Buffertexture map
-      renderer2.setRenderTarget(null)
+      // renderer2.setRenderTarget(null)
       // renderer2.render(scene, camera);
       //scene 4 render
       // renderer2.render(scene, camera)
-      analyglyphEffect2.render(scene, camera);
+      // analyglyphEffect2.render(scene, camera);
       return
     }
+    else {
 
 // rest of scene render
     switch (setAnalglyphEffect) {
@@ -811,11 +1037,19 @@ var analglyphFadeLength = 2
               break;
 
             case sceneInfo2:
+              if(effectType !== 'film') {
                 composer2.render(scene, camera)
+              }
+              else if(effectType === 'glitch') {
+                composer1.render(scene, camera)
+              }
+                
               break;
             
             case sceneInfo3:
+              if(effectType !== 'film') {
                 composer3.render(scene, camera)
+              }
               break;
               
             }
@@ -823,7 +1057,7 @@ var analglyphFadeLength = 2
 
     }
 
-
+  }
 
     
   }
@@ -854,12 +1088,23 @@ var analglyphFadeLength = 2
   var movementRate = 5
   var velocity = 0;
   var acceleration = 0;
-
+  var cameraMovement = 1
   var range = 30
+  var drawRate = 0
+  var test = new MeshLine()
+  var testgeometry = new THREE.Geometry()
+  testgeometry.vertices.push( new THREE.Vector3( 1, 1, 0 ) );
+  testgeometry.vertices.push( new THREE.Vector3( 1, 1, 0 ) );
 
   function beatLineAnimation() {
     var frustum = new THREE.Frustum();
     var cameraViewProjectionMatrix = new THREE.Matrix4();
+
+    // if(sceneInfo2.camera.position.x > 1 || sceneInfo2.camera.position.x < -1 || sceneInfo2.camera.position.y > 1 || sceneInfo2.camera.position.y < -1) {
+    //   cameraMovement = -(cameraMovement)
+    // }
+    // sceneInfo2.camera.position.x += cameraMovement
+    // sceneInfo2.camera.position.y += cameraMovement
     
     // every time the camera or objects change position (or every frame)
     
@@ -867,54 +1112,66 @@ var analglyphFadeLength = 2
     sceneInfo2.camera.matrixWorldInverse.getInverse( sceneInfo2.camera.matrixWorld );
     cameraViewProjectionMatrix.multiplyMatrices( sceneInfo2.camera.projectionMatrix, sceneInfo2.camera.matrixWorldInverse );
     frustum.setFromProjectionMatrix( cameraViewProjectionMatrix );
-
+    //if pen leaves view
     if (frustum.intersectsObject(sceneInfo2.mesh) === false) {
 
       sceneInfo2.mesh.position.x = -sceneInfo2.mesh.position.x * 0.7
 
-      for (var i = lineCounter; i >= 0; i--) {
-        sceneInfo2.scene.remove(sceneInfo2.beatLineArray[i])
-      }
-      sceneInfo2.beatLineArray = []
-      lineCounter = 0
-      beatLinePoints = new THREE.Geometry()
-      beatLinePoints.vertices.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
-      beatLinePoints.vertices.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
-    
+
+        // sceneInfo2.scene.remove(sceneInfo2.beatLine)
+
+      // sceneInfo2.beatLineArray = []
+      // lineCounter = 0
+      beatLinePoints = []
+      // console.log(beatLinePoints)
+
+      beatLinePoints.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
+      beatLinePoints.push( new THREE.Vector3( sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0 ) );
+      sceneInfo2.beatLine.setVertices(beatLinePoints)
+      // sceneInfo2.scene.add(sceneInfo2.beatLine)
       
 
     }
+    //if pen is in view
     else {
+      // if(drawRate !== 2) {
+        drawRate++
 
-          beatLinePoints.vertices.push(new THREE.Vector3(sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0))
+        beatLinePoints.push(new THREE.Vector3(sceneInfo2.mesh.position.x, sceneInfo2.mesh.position.y, 0))
 
-          sceneInfo2.beatLine = new MeshLine()
-          sceneInfo2.beatLine.setGeometry(beatLinePoints)
-          sceneInfo2.beatLineArray[lineCounter] = new THREE.Mesh(sceneInfo2.beatLine.geometry, sceneInfo2.beatLineMaterial)
+        sceneInfo2.beatLine.setVertices(beatLinePoints)
+        // sceneInfo2.beatLineArray[lineCounter] = new THREE.Mesh(sceneInfo2.beatLine.geometry, sceneInfo2.beatLineMaterial)
 
-          sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
-          lineCounter++
+        // sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
+        lineCounter++
 
-          //Physics
-          
-          acceleration = 800 / (beatAnimation - sceneInfo2.mesh.position.y)
+        //Physics
+        
+        acceleration = 800 / (beatAnimation - sceneInfo2.mesh.position.y)
 
 
-          if (isFinite(acceleration) !== true) {
-      
-              acceleration = 0
-              velocity *= 0.7
-          }
-      
-          else if (sceneInfo2.mesh.position.y > beatAnimation - range && sceneInfo2.mesh.position.y < beatAnimation + range) {
+        if (isFinite(acceleration) !== true) {
+    
+            acceleration = 0
+            velocity *= 0.7
+        }
+    
+        else if (sceneInfo2.mesh.position.y > beatAnimation - range && sceneInfo2.mesh.position.y < beatAnimation + range) {
 
-              acceleration = 0
-              velocity *= 0.7
-          }
-      
-          velocity += acceleration;
-          sceneInfo2.mesh.position.y += velocity;
-          sceneInfo2.mesh.position.x += movementRate
+            acceleration = 0
+            velocity *= 0.7
+        }
+    
+        velocity += acceleration;
+        sceneInfo2.mesh.position.y += velocity;
+        sceneInfo2.mesh.position.x += movementRate
+
+      // }
+      // else {
+      //   // console.log('skiped')
+      //   drawRate = 0
+      // }
+
         }
         if (sceneInfo2.mesh.position.y > 150 || sceneInfo2.mesh.position.y < -150) {
             sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2 
@@ -923,16 +1180,20 @@ var analglyphFadeLength = 2
     }
   
 
-
+var counter = 0
+var counter2 = 0
   function render(time) {
-    
-    time *= 0.001;
+    // if (counter2 !== 1) {
+      counter2++
+
     pitchPlaneAnimation()
     //beatline causes cpu spikes
     beatLineAnimation()
     //neoline accounts for increasing cpu usage over time
     neoLineAnimation()
-    glitchDistort(sceneInfo4.plane)
+
+    
+    
 
     if(checkForUndoAnalGlyphControl === true) {
       undoFader(analglyphBarLength)
@@ -942,21 +1203,43 @@ var analglyphFadeLength = 2
       sceneInfo4.sculpture.rotation.y += .01
       flickerObject(sceneInfo4.plane)
     }
-    
+  // }
+  // else{
+    // console.log('sckp')
+    // counter2 = 0
+  // }
     resizeRendererToDisplaySize(renderer);
+    resizeRendererToDisplaySize(renderer2);
 
     renderer.setScissorTest(false);
     renderer.clear(true, true);
     renderer.setScissorTest(true);
     
-    renderSceneInfo(sceneInfo1);
-    renderSceneInfo(sceneInfo2);
-    renderSceneInfo(sceneInfo3);
+
+    if(counter === 2) {
+      counter = 0
+      
+      
+      
+      
+      
+    }
+    else{
+      counter++
+    }
+    // renderSceneInfo(sceneInfo1);
+    // renderSceneInfo(sceneInfo2);
+    // renderSceneInfo(sceneInfo3);
     renderSceneInfo(sceneInfo4);
+    
+    
+
 
     requestAnimationFrame(render);
-  }
+
+
   
+}
   requestAnimationFrame(render);
 }
 
@@ -1114,6 +1397,7 @@ runVisuals()
   
 
     function startTimer () {
+
 
       stopTimer()
       segmentCounter = findNextDivision(trackData.segmentsStart, segmentCounter, "segment")

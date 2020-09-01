@@ -14,13 +14,13 @@ var path = require('path');
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
-const PORT = process.env.PORT || 8080
-//Set up webserver
+//const PORT = process.env.PORT || 8080
+const PORT = 8080
 
 var client_id = '***REMOVED***'; // Your client id
 var client_secret = '***REMOVED***'; // Your secret
-var redirect_uri = '***REMOVED***'; // Your redirect uri
-
+//var redirect_uri = '***REMOVED***'; // Your redirect uri
+var redirect_uri = 'http://localhost:8080/callback';
 var stateKey = 'spotify_auth_state';
 
 var app = express();

@@ -30,9 +30,9 @@ body {
   .diagram {
     display: inline-block;
     width: 50%;
-    padding-bottom: 30%;
+    /* padding-bottom: 30%; */
     /*I'll need to fix this not being responsive*/
-    height: 0;
+    height: 50%;
     z-index: 1;
     
 
@@ -45,4 +45,44 @@ body {
   .right {
     float: right;
 
+  }
+
+  /* #box_container {
+    width: 50%;
+    height: 50%;
+    margin: 0px;
+  }
+
+  #pyramid_container {
+    width: 50%;
+    height: 50%;
+    margin: 0px;
+  }
+  #dodecahedron_container {
+    width: 50%;
+    height: 50%;
+    margin: 0px;
+  }
+  #plane_container {
+    width: 50%;
+    height: 50%;
+    margin: 0px;
+  } */
+
+  #box {
+    width: 50%;
+    height: 50%;
+  }
+
+  #pyramid {
+    width: 50%;
+    height: 50%;
+  }
+  #dodecahedron {
+    width: 50%;
+    height: 50%;
+  }
+  #plane {
+    width: 50%;
+    height: 50%;
   }
