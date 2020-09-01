@@ -35,7 +35,7 @@ MeshLine.prototype.setMatrixWorld = function(matrixWorld) {
 
 
 MeshLine.prototype.setGeometry = function( g, c ) {
-	
+
 	this.widthCallback = c;
 
 	this.positions = [];
