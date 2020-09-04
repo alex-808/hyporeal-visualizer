@@ -11,6 +11,7 @@
     "cors": "^2.8.4",
     "express": "^4.16.4",
     "express-session": "^1.17.1",
+    "lodash": "^4.17.20",
     "node-static": "^0.7.11",
     "querystring": "~0.2.0",
     "request": "~2.83.0",

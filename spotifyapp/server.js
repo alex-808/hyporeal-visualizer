@@ -26,7 +26,7 @@ var stateKey = 'spotify_auth_state';
 var app = express();
 
 
-app.use(favicon(__dirname + '/public/images/favicon.ico'));
+app.use(favicon(__dirname + '/public/images/vaporwave1.ico'));
 app.use(express.json())
 
 app.use(express.static(__dirname + '/public'))
