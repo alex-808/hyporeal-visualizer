@@ -1,53 +1,71 @@
 body {
-    display: block;
-    margin: 8px;
+  display: block;
+  margin: 8px;
+  background-color: black;
+  /* width: 50%; */
 }
 
 #c {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  /* background-image: url('tunnel.jpg'); */
+  background-color: black;
+  z-index: -2;
+}
+
+/* #c {
     position: fixed;
-    left: 0;
+    left: 16.5%;
     top: 0;
     width: 100vw;
     height: 100vh;
     display: block;
-    /* background-image: url('tunnel.jpg'); */
     background-color: black;
     z-index: -2;
-  }
-
-  #big {
+  } 
+*/
+/* #big {
     position: fixed;
     left: 0;
     top: 0;
-    width: 100vw;
+    width: 66vw;
     height: 100vh;
     display: block;
 
     z-index: -1;
-  }
+  } */
 
+#big {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
 
-  .diagram {
-    display: inline-block;
-    width: 50%;
-    /* padding-bottom: 30%; */
-    /*I'll need to fix this not being responsive*/
-    height: 50%;
-    z-index: 1;
-    
+  z-index: -1;
+}
 
-    
-  }
-  .left {
-    float: left;
+.diagram {
+  display: inline-block;
+  width: 50%;
+  /* padding-bottom: 30%; */
+  /*I'll need to fix this not being responsive*/
+  height: 50%;
+  z-index: 1;
+}
+.left {
+  float: left;
+}
+.right {
+  float: right;
+}
 
-  }
-  .right {
-    float: right;
-
-  }
-
-  /* #box_container {
+/* #box_container {
     width: 50%;
     height: 50%;
     margin: 0px;
@@ -69,20 +87,20 @@ body {
     margin: 0px;
   } */
 
-  #box {
-    width: 50%;
-    height: 50%;
-  }
+#pitchplane {
+  width: 50%;
+  height: 50%;
+}
 
-  #pyramid {
-    width: 50%;
-    height: 50%;
-  }
-  #dodecahedron {
-    width: 50%;
-    height: 50%;
-  }
-  #plane {
-    width: 50%;
-    height: 50%;
-  }
+#beatline {
+  width: 50%;
+  height: 50%;
+}
+#glitchdistort {
+  width: 50%;
+  height: 50%;
+}
+#neoline {
+  width: 25%;
+  height: 50%;
+}
