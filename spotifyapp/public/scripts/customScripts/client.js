@@ -180,7 +180,7 @@ function runVisuals() {
       
       //sceneInfo.scene.add(goalLine2);
 
-      const radius = 10;
+      const radius = .1;
       const widthSegments = 10;
       const heightSegments = 10;
       const geometry = new THREE.SphereBufferGeometry(radius, widthSegments, heightSegments);
