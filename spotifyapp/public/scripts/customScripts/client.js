@@ -15,14 +15,12 @@ import {
 import { CopyShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/CopyShader.js';
 import { songData } from './songData.js';
 import { makeScene } from './sceneSetup.js';
+import * as utils from './utils.js';
 
 var url = window.location.href;
 var tokenArray = url.split('=');
 var tokenMain;
 var refreshToken = tokenArray[1];
-function getRandomInt(max) {
-    return Math.floor(Math.random() * Math.floor(max));
-}
 
 window.addEventListener('beforeunload', function (event) {
     fetch('./session_destroy', {
@@ -41,11 +39,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var timbreSum2 = 0;
 
     var checkForUndoAnalGlyphControl = false;
-    var hardRefresh = true;
     var clearParagraph = true;
 
     function runVisuals() {
-        const canvas2 = document.querySelector('#big');
         const canvas = document.querySelector('#c');
 
         const renderer2 = new THREE.WebGLRenderer({
@@ -82,17 +78,20 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
         function setupScene1() {
             const sceneInfo = makeScene(document.querySelector('#pitchplane'));
+
             var geometry = new THREE.PlaneGeometry(
                 2,
                 1,
                 planeDimension - 1,
                 planeDimension - 1
             );
-
             var material = new THREE.MeshBasicMaterial();
             var plane = new THREE.Mesh(geometry, material);
+            plane.material.wireframe = true;
+            plane.rotation.set(-45, 0, 0);
+
             for (var i = 0; i < planeDimension; i++) {
-                plane.geometry.vertices[i].z = planeStoredBackRow[i];
+                plane.geometry.vertices[i].z = 0;
             }
 
             var renderPass1 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
@@ -102,8 +101,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             composer1.addPass(dotScreenPass);
 
             sceneInfo.scene.add(plane);
-            plane.material.wireframe = true;
-            plane.rotation.set(-45, 0, 0);
             sceneInfo.camera.fov = 75;
             sceneInfo.mesh = plane;
 
@@ -348,7 +345,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             );
 
             plane.originalGeometry = originalGeometry;
-            // console.log(plane.geometry.vertices === originalGeometry)
 
             var sculptureArray = [
                 './assets/models/venus3.gltf',
@@ -358,7 +354,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             var sculpture;
             var light;
             const loader = new GLTFLoader();
-            loader.load(sculptureArray[getRandomInt(3)], (object) => {
+            loader.load(sculptureArray[utils.getRandomInt(3)], (object) => {
                 sculpture = object.scene;
                 // console.log(sculpture)
 
@@ -375,7 +371,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
         //add more variety for section changes
         function getSectionEffect(maxRandom) {
-            var random = getRandomInt(maxRandom);
+            var random = utils.getRandomInt(maxRandom);
             // console.log(random)
             switch (random) {
                 case 0:
@@ -383,7 +379,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     if (previous !== 'glitch') {
                         console.log('glitch');
                         totalGlitch();
-                        if (getRandomInt(2) === 0) {
+                        if (utils.getRandomInt(2) === 0) {
                             totalFader();
                         }
                         previous = 'glitch';
@@ -414,7 +410,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         console.log('none and maybe fader');
                         totalNone();
                         totalGlitch();
-                        if (getRandomInt(2) === 0) {
+                        if (utils.getRandomInt(2) === 0) {
                             totalFader();
                         }
                     } else {
@@ -437,21 +433,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                     break;
 
-                // case 5:
-                //   console.log('spazz')
-                //   var id = setInterval(function() {
-                //     // totalFader()
-                //     totalGlitch()
-                //     dotScreenPass.enabled = true
-                //     totalFilm()
-                //   }, 50)
-                //   setTimeout(function() {
-                //     clearInterval(id)
-                //     dotScreenPass.enabled = false
-                //     console.log('spazz ended')
-                //   }, 1000)
-                //   break
-
                 case 8:
                 case 9:
                     if (previous !== 'bigScreen') {
@@ -466,9 +447,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         } else {
                             bigScreenInterval = 5000;
                         }
-                        var random = getRandomInt(3);
+                        var random = utils.getRandomInt(3);
                         if (random === previousBigScreen) {
-                            random = getRandomInt(3);
+                            random = utils.getRandomInt(3);
                         }
                         var sceneIndex;
                         console.log(random);
@@ -611,7 +592,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 ) {
                     //
                     neoToggle = false;
-                    if (getRandomInt(2) === 0) {
+                    if (utils.getRandomInt(2) === 0) {
                         console.log('glitch reset disabled');
                         allowGlitchReset = false;
                         allowGlitchBars = 4;
@@ -647,11 +628,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 maskingBars--;
                 neoStoredBarCounter = barCounter;
                 glitchDistort(sceneInfo4.plane);
-                if (getRandomInt(4) === 0) {
+                if (utils.getRandomInt(4) === 0) {
                     totalFader();
                 }
 
-                if (getRandomInt(4) === 0) {
+                if (utils.getRandomInt(4) === 0) {
                     glitchTheBar = 4;
                 }
 
@@ -792,7 +773,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 neoLineArray = [];
                 //sceneInfo3.neoLinePoints = []
                 neoParagraphArray = [];
-                if (getRandomInt(2) === 0) {
+                if (utils.getRandomInt(2) === 0) {
                     faderInverted = !faderInverted;
                     console.log('faderInverted', faderInverted);
                     if (trackData) {
@@ -848,12 +829,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
         var storedEffect;
         function totalGlitch() {
-            var random = getRandomInt(2);
+            var random = utils.getRandomInt(2);
             splitScreen(sceneInfoArray[0], sceneInfoArray[1]);
             console.log('glitched');
             storedEffect = setAnalglyphEffect;
             if (storedEffect === 'effect') {
-                if (getRandomInt(2) === 0) {
+                if (utils.getRandomInt(2) === 0) {
                     storedEffect = 'analglyph';
                 } else {
                     storedEffect = 'none';
@@ -875,7 +856,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var totalFilmDuration = 10000;
         // need to set it so if there is a skip in song, the timeouts are cleared
         function totalFilm() {
-            var random = getRandomInt(3);
+            var random = utils.getRandomInt(3);
             // console.log("random", random)
             if (random === 0) {
                 if (trackData.beatsStart[beatCounter + 1]) {
@@ -937,7 +918,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             // console.log(faderInverted)
             if (
                 sectionCounter > trackData.sections.length / 2 &&
-                getRandomInt(3) === 0
+                utils.getRandomInt(3) === 0
             ) {
                 faderInverted = !faderInverted;
                 console.log('fader inverted', faderInverted);
@@ -962,7 +943,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 fadingBool = true;
 
                 analglyphStoredBarCounter = barCounter;
-                if (getRandomInt(2) === 0) {
+                if (utils.getRandomInt(2) === 0) {
                     sceneInfo4.bufferScene.background = _.cloneDeep(
                         faderColors[faderColor2]
                     );
@@ -1062,13 +1043,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             distortCounter++;
 
             var negative;
-            if (getRandomInt(2) === 0) {
+            if (utils.getRandomInt(2) === 0) {
                 negative = -1;
             } else {
                 negative = 1;
             }
-            direction = directionArray[getRandomInt(3)];
-            glitchRange = (getRandomInt(10) + 1) / 10;
+            direction = directionArray[utils.getRandomInt(3)];
+            glitchRange = (utils.getRandomInt(10) + 1) / 10;
 
             glitchPoint = Math.random() * negative;
 
@@ -1083,7 +1064,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     glitchAmount = 0.05;
                     break;
                 case (direction = 'z'):
-                    if (getRandomInt(2) === 0) {
+                    if (utils.getRandomInt(2) === 0) {
                         grain = 'y';
                     } else {
                         grain = 'x';
@@ -1464,10 +1445,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         var counter = 0;
-        var counter2 = 0;
         function render(time) {
-            counter2++;
-
             pitchPlaneAnimation();
             beatLineAnimation();
             //neoline accounts for increasing cpu usage over time
@@ -1605,8 +1583,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }
             }
 
-            timbreSum1 = firstHalf.reduce(timbreReducer);
-            timbreSum2 = secondHalf.reduce(timbreReducer);
+            timbreSum1 = firstHalf.reduce((acc, val) => (acc *= val));
+            timbreSum2 = secondHalf.reduce((acc, val) => (acc *= val));
             if (timbreSum1 > 0) {
                 var negative = false;
             } else {
@@ -1634,10 +1612,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             segmentCounter++;
         }
-    }
-
-    function timbreReducer(acc, val) {
-        return (acc *= val);
     }
 
     function getNeoDimension(bars) {
@@ -1737,7 +1711,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         console.error(message);
     });
 
-    var current_track_id;
+    var currentTrackID;
     var stored_track_id = 0;
     var trackData;
     var queryRunning;
@@ -1753,13 +1727,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
         if (state) {
             elapsedTime = trackPosition;
-            current_track_id = state['track_window']['current_track']['id'];
+            currentTrackID = state['track_window']['current_track']['id'];
 
             trackPosition = state['position'];
-            if (current_track_id !== stored_track_id) {
+            if (currentTrackID !== stored_track_id) {
                 console.log(trackData);
                 trackPosition = 0;
-                stored_track_id = current_track_id;
+                stored_track_id = currentTrackID;
                 clearParagraph = true;
 
                 console.log('New track detected:', stored_track_id);
