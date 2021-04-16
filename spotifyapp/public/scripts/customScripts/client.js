@@ -1,5 +1,4 @@
 import {GLTFLoader} from "https://unpkg.com/three@0.119.1/examples/jsm/loaders/GLTFLoader.js"
-import {AsciiEffect} from "https://unpkg.com/three@0.119.1/examples/jsm/effects/AsciiEffect.js"
 import { AnaglyphEffect } from 'https://unpkg.com/three@0.119.1/examples/jsm/effects/AnaglyphEffect.js';
 import {EffectComposer} from "https://unpkg.com/three@0.119.1/examples/jsm/postprocessing/EffectComposer.js"
 import { RenderPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/RenderPass.js';
@@ -7,14 +6,10 @@ import { GlitchPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postpr
 import { FilmPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/FilmPass.js';
 import { ShaderPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/ShaderPass.js';
 import { DotScreenPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/DotScreenPass.js';
-import { FXAAShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/FXAAShader.js'
 import { TexturePass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/TexturePass.js';
 import { ClearPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/ClearPass.js';
 import { MaskPass, ClearMaskPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/MaskPass.js';
 import { CopyShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/CopyShader.js';
-// import * as lodash from 'https://unpkg.com/lodash@4.17.20/'
-
-// console.log(lodash)
 
 var url = window.location.href
 var tokenArray = url.split('=')
