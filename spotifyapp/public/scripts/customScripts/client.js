@@ -396,9 +396,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             // console.log(plane.geometry.vertices === originalGeometry)
 
             var sculptureArray = [
-                './venus3.gltf',
-                './youngwarrior.gltf',
-                './SculptureBlue.gltf',
+                './assets/models/venus3.gltf',
+                './assets/models/youngwarrior.gltf',
+                './assets/models/SculptureBlue.gltf',
             ];
             var sculpture;
             var light;
