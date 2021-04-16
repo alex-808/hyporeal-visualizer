@@ -13,6 +13,7 @@ import {
     ClearMaskPass,
 } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/MaskPass.js';
 import { CopyShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/CopyShader.js';
+import { songData } from './songData.js';
 
 var url = window.location.href;
 var tokenArray = url.split('=');
@@ -72,18 +73,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         glitchPass.enabled = false;
         glitchPass.goWild = true;
 
-        // setInterval(function() {
-        //   console.log(glitchPass)
-        // }, 1000)
-        // console.log(glitchPass.curF)
-
         var filmPass = new FilmPass(1, 1, 600, false);
         filmPass.enabled = false;
 
         var dotScreenPass = new DotScreenPass(new THREE.Vector2(0, 0), 0.75, 1);
         dotScreenPass.enabled = false;
-
-        // var FXAAPass = new ShaderPass(FXAAShader)
 
         function makeScene(elem) {
             const scene = new THREE.Scene();
@@ -1863,82 +1857,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         clearInterval(trackPositionQuery);
     }
     //add something to allow stop querying when we don't need to
-
-    //create a songData object
-    class songData {
-        constructor(rawData) {
-            this.bars = rawData['bars'];
-            this.beats = rawData['beats'];
-            this.sections = rawData['sections'];
-            this.segments = rawData['segments'];
-            this.tatums = rawData['tatums'];
-
-            this.tatumsStart = [];
-            for (let i = 0; i < this.tatums.length; i++) {
-                this.tatumsStart[i] = parseFloat(
-                    (this.tatums[i]['start'] * 1000).toFixed(2)
-                );
-            }
-
-            this.beatsStart = [];
-            for (let i = 0; i < this.beats.length; i++) {
-                this.beatsStart[i] = parseFloat(
-                    (this.beats[i]['start'] * 1000).toFixed(2)
-                );
-            }
-
-            this.segmentsStart = [];
-            for (let i = 0; i < this.segments.length; i++) {
-                this.segmentsStart[i] = parseFloat(
-                    (this.segments[i]['start'] * 1000).toFixed(2)
-                );
-            }
-
-            this.sectionsStart = [];
-            for (let i = 0; i < this.sections.length; i++) {
-                this.sectionsStart[i] = parseFloat(
-                    (this.sections[i]['start'] * 1000).toFixed(2)
-                );
-            }
-
-            this.barsStart = [];
-            for (let i = 0; i < this.bars.length; i++) {
-                this.barsStart[i] = parseFloat(
-                    (this.bars[i]['start'] * 1000).toFixed(2)
-                );
-            }
-
-            //get this working maybe
-            this.sectionNearestBarStart = [];
-
-            for (let i = 1; i < this.sectionsStart.length; i++) {
-                this.sectionNearestBarStart[i] = -100;
-                // console.log(this.sectionsStart[i])
-                for (let j = 0; j < this.barsStart.length; j++) {
-                    // console.log(Math.abs(this.sectionsStart[i] - this.barsStart[j]))
-                    // if(i = 0) {
-                    //   this.sectionNearestBarStart[i] = 0
-                    // }
-                    // else {
-                    if (
-                        Math.abs(this.sectionsStart[i] - this.barsStart[j]) <
-                        Math.abs(
-                            this.sectionNearestBarStart[i] - this.barsStart[j]
-                        )
-                    ) {
-                        this.sectionNearestBarStart[i] = this.barsStart[j];
-                        // console.log('difference', this.sectionsStart[i] - this.barsStart[j])
-                        // console.log('start', this.sectionNearestBarStart[i])
-                    }
-                    // }
-                }
-            }
-            this.sectionNearestBarStart[0] = 0;
-            for (var i = 0; i < this.sectionNearestBarStart.length; i++) {
-                // console.log(Math.abs(this.sectionNearestBarStart[i] - this.sectionsStart[i]))
-            }
-        }
-    }
 
     // Ready
     player.addListener('ready', ({ device_id }) => {
