@@ -14,6 +14,7 @@ import {
 } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/MaskPass.js';
 import { CopyShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shaders/CopyShader.js';
 import { songData } from './songData.js';
+import { makeScene } from './sceneSetup.js';
 
 var url = window.location.href;
 var tokenArray = url.split('=');
@@ -79,27 +80,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var dotScreenPass = new DotScreenPass(new THREE.Vector2(0, 0), 0.75, 1);
         dotScreenPass.enabled = false;
 
-        function makeScene(elem) {
-            const scene = new THREE.Scene();
-            const fov = 45;
-            const aspect = 2; // the canvas default
-            const near = 0.1;
-            const far = 1000;
-            const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-            camera.position.set(0, 0, 2);
-            camera.lookAt(0, 0, 0);
-
-            {
-                const color = 0xffffff;
-                const intensity = 0.5;
-                const light = new THREE.DirectionalLight(color, intensity);
-                light.position.set(-1, 2, 4);
-                scene.add(light);
-            }
-
-            return { scene, camera, elem };
-        }
-
         function setupScene1() {
             const sceneInfo = makeScene(document.querySelector('#pitchplane'));
             var geometry = new THREE.PlaneGeometry(
@@ -156,33 +136,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             composer2.addPass(renderPass2);
             composer2.addPass(glitchPass);
             composer2.addPass(filmPass);
-            // composer2.addPass(FXAAPass)
-            // goalLineArray2.push(
-            //   new THREE.Vector3(-1000, -100, 0),
-            //   new THREE.Vector3(1000, -100, 0)
-            // );
 
             var goalLineMaterial = new MeshLineMaterial({
                 color: 'white',
                 lineWidth: 5,
             });
-            // var goalLine1Geometry = new THREE.BufferGeometry().setFromPoints(
-            //   goalLineArray1
-            // );
-            // var goalLine2Geometry = new THREE.BufferGeometry().setFromPoints(
-            //   goalLineArray2
-            // );
+
             var goalLine1 = new MeshLine();
-            // var goalLine2 = new MeshLine()
             goalLine1.setGeometry(goalLineArray1);
-            // goalLine2.setGeometry(goalLine2Geometry)
             var goalLine1Mesh = new THREE.Mesh(
                 goalLine1.geometry,
                 goalLineMaterial
             );
-            //sceneInfo.scene.add(goalLine1Mesh);
-
-            //sceneInfo.scene.add(goalLine2);
 
             const radius = 0.1;
             const widthSegments = 10;
@@ -205,12 +170,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 lineWidth: 1.8,
                 sizeAttenuation: 1,
             });
-            // var beatLineMaterial = new THREE.MeshBasicMaterial( { color: 'white'} );
 
             var beatLine = new MeshLine();
-            // beatLinePoints.push( new THREE.Vector2( 1, 1, 0 ) );
-            // beatLinePoints.push( new THREE.Vector2( 10, 1, 0 ) );
-            // beatLine.setVertices(beatLinePoints)
 
             var beatLineMesh = new THREE.Mesh(
                 beatLine.geometry,
