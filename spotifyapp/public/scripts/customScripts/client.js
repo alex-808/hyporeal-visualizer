@@ -1,11 +1,7 @@
 import { GLTFLoader } from 'https://unpkg.com/three@0.119.1/examples/jsm/loaders/GLTFLoader.js';
-import { AnaglyphEffect } from 'https://unpkg.com/three@0.119.1/examples/jsm/effects/AnaglyphEffect.js';
 import { EffectComposer } from 'https://unpkg.com/three@0.119.1/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/RenderPass.js';
-import { GlitchPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/GlitchPass.js';
-import { FilmPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/FilmPass.js';
 import { ShaderPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/ShaderPass.js';
-import { DotScreenPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/DotScreenPass.js';
 import { TexturePass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/TexturePass.js';
 import { ClearPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/ClearPass.js';
 import {
@@ -16,6 +12,7 @@ import { CopyShader } from 'https://unpkg.com/three@0.119.1//examples/jsm/shader
 import { songData } from './songData.js';
 import { makeScene } from './sceneSetup.js';
 import * as utils from './utils.js';
+import * as visuals from './visualSetup.js';
 
 window.addEventListener('beforeunload', function (event) {
     fetch('./session_destroy', {
@@ -39,38 +36,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     function runVisuals() {
         const canvas = document.querySelector('#c');
 
-        const renderer2 = new THREE.WebGLRenderer({
-            canvas,
-            alpha: true,
-            antialias: true,
-        });
-
-        const renderer = new THREE.WebGLRenderer({
-            canvas,
-            alpha: false,
-            antialias: true,
-        });
-
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer2.setPixelRatio(window.devicePixelRatio);
-
-        var analyglyphEffect = new AnaglyphEffect(renderer);
-        var analyglyphEffect2 = new AnaglyphEffect(renderer2);
-
-        var composer1 = new EffectComposer(renderer);
-        var composer2 = new EffectComposer(renderer);
-        var composer3 = new EffectComposer(renderer);
-
-        var glitchPass = new GlitchPass();
-        glitchPass.enabled = false;
-        glitchPass.goWild = true;
-
-        var filmPass = new FilmPass(1, 1, 600, false);
-        filmPass.enabled = false;
-
-        var dotScreenPass = new DotScreenPass(new THREE.Vector2(0, 0), 0.75, 1);
-        dotScreenPass.enabled = false;
-
         function setupScene1() {
             const sceneInfo = makeScene(document.querySelector('#pitchplane'));
 
@@ -90,10 +55,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
 
             var renderPass1 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
-            composer1.addPass(renderPass1);
-            composer1.addPass(glitchPass);
-            composer1.addPass(filmPass);
-            composer1.addPass(dotScreenPass);
+            visuals.composer1.addPass(renderPass1);
+            visuals.composer1.addPass(visuals.glitchPass);
+            visuals.composer1.addPass(visuals.filmPass);
+            visuals.composer1.addPass(visuals.dotScreenPass);
 
             sceneInfo.scene.add(plane);
             sceneInfo.camera.fov = 75;
@@ -125,9 +90,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             goalLineArray1.vertices.push(new THREE.Vector3(1000, 100, 0));
 
             var renderPass2 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
-            composer2.addPass(renderPass2);
-            composer2.addPass(glitchPass);
-            composer2.addPass(filmPass);
+            visuals.composer2.addPass(renderPass2);
+            visuals.composer2.addPass(visuals.glitchPass);
+            visuals.composer2.addPass(visuals.filmPass);
 
             var goalLineMaterial = new MeshLineMaterial({
                 color: 'white',
@@ -182,9 +147,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             const sceneInfo = makeScene(document.querySelector('#neoline'));
 
             var renderPass3 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
-            composer3.addPass(renderPass3);
-            composer3.addPass(glitchPass);
-            composer3.addPass(filmPass);
+            visuals.composer3.addPass(renderPass3);
+            visuals.composer3.addPass(visuals.glitchPass);
+            visuals.composer3.addPass(visuals.filmPass);
 
             const radius = 0.02;
             const widthSegments = 1;
@@ -294,15 +259,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.bufferTexture = bufferTexture;
             sceneInfo.bufferScene = bufferScene;
 
-            var composer4 = new EffectComposer(renderer2, bufferTexture);
+            var composer4 = new EffectComposer(
+                visuals.renderer2,
+                bufferTexture
+            );
             sceneInfo.composer4 = composer4;
             var renderPass4 = new RenderPass(
                 sceneInfo.bufferScene,
                 sceneInfo.camera
             );
             // composer4.addPass( renderPass4 );
-            composer4.addPass(filmPass);
-            // composer4.addPass(dotScreenPass)
+            composer4.addPass(visuals.filmPass);
+            // composer4.addPass(visuals.dotScreenPass)
 
             composer4.addPass(clearPass);
             composer4.addPass(maskPass);
@@ -837,7 +805,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             setTimeout(function () {
                 setAnalglyphEffect = storedEffect;
-                glitchPass.enabled = false;
+                visuals.glitchPass.enabled = false;
                 sceneInfo2.beatLineMaterial.lineWidth = 1.8;
                 undoScreenChange();
             }, 100);
@@ -853,11 +821,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     totalFilmDuration =
                         trackData.beatsStart[beatCounter + 1] -
                         trackData.beatsStart[beatCounter];
-                    dotScreenPass.enabled = true;
+                    visuals.dotScreenPass.enabled = true;
                     // console.log("short", totalFilmDuration)
                 } else {
                     totalFilmDuration = 1000;
-                    dotScreenPass.enabled = true;
+                    visuals.dotScreenPass.enabled = true;
                 }
             } else {
                 if (trackData.beatsStart[beatCounter + 8]) {
@@ -875,8 +843,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             setTimeout(function () {
                 setAnalglyphEffect = 'analglyph';
-                filmPass.enabled = false;
-                dotScreenPass.enabled = false;
+                visuals.filmPass.enabled = false;
+                visuals.dotScreenPass.enabled = false;
             }, totalFilmDuration);
         }
 
@@ -1174,7 +1142,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         function resizeRendererToDisplaySize(renderer) {
-            if (renderer === renderer2) {
+            if (renderer === visuals.renderer2) {
                 // return
             }
             const canvas = renderer.domElement;
@@ -1194,7 +1162,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         function renderSceneInfo(sceneInfo) {
             if (masking === true && sceneInfo === sceneInfo4) {
                 bigScreen(sceneInfo4);
-                resizeRendererToDisplaySize(renderer2);
+                resizeRendererToDisplaySize(visuals.renderer2);
             }
 
             const { scene, camera, elem } = sceneInfo;
@@ -1211,9 +1179,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             const isOffscreen =
                 bottom < 0 ||
-                top > renderer.domElement.clientHeight ||
+                top > visuals.renderer.domElement.clientHeight ||
                 right < 0 ||
-                left > renderer.domElement.clientWidth;
+                left > visuals.renderer.domElement.clientWidth;
 
             if (isOffscreen) {
                 return;
@@ -1222,19 +1190,25 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
 
-            const positiveYUpBottom = renderer.domElement.clientHeight - bottom;
-            renderer.setScissor(left, positiveYUpBottom, width, height);
-            renderer.setViewport(left, positiveYUpBottom, width, height);
+            const positiveYUpBottom =
+                visuals.renderer.domElement.clientHeight - bottom;
+            visuals.renderer.setScissor(left, positiveYUpBottom, width, height);
+            visuals.renderer.setViewport(
+                left,
+                positiveYUpBottom,
+                width,
+                height
+            );
 
             if (sceneInfo === sceneInfo4) {
                 if (masking === false) {
-                    renderer2.setScissor(
+                    visuals.renderer2.setScissor(
                         left,
                         positiveYUpBottom,
                         width,
                         height
                     );
-                    renderer2.setViewport(
+                    visuals.renderer2.setViewport(
                         left,
                         positiveYUpBottom,
                         width,
@@ -1242,29 +1216,29 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     );
                     sceneInfo4.plane.geometry.verticesNeedUpdate = true;
                     //renderer2 renders to bufferTexture
-                    renderer2.setRenderTarget(sceneInfo4.bufferTexture);
-                    renderer2.render(
+                    visuals.renderer2.setRenderTarget(sceneInfo4.bufferTexture);
+                    visuals.renderer2.render(
                         sceneInfo4.bufferScene,
                         sceneInfo4.bufferCamera
                     );
 
                     //set target to the main scene to render the plane with Buffertexture map
-                    renderer2.setRenderTarget(null);
-                    renderer2.render(scene, camera);
+                    visuals.renderer2.setRenderTarget(null);
+                    visuals.renderer2.render(scene, camera);
                     //scene 4 render
-                    renderer2.render(scene, camera);
-                    analyglyphEffect2.render(scene, camera);
+                    visuals.renderer2.render(scene, camera);
+                    visuals.analyglyphEffect2.render(scene, camera);
                     return;
                 } else {
                     var time = performance.now() * 0.001 + 6000;
                     sceneInfo4.composer4.setSize(width, height);
-                    renderer2.setScissor(
+                    visuals.renderer2.setScissor(
                         left,
                         positiveYUpBottom,
                         width,
                         height
                     );
-                    renderer2.setViewport(
+                    visuals.renderer2.setViewport(
                         left,
                         positiveYUpBottom,
                         width,
@@ -1277,39 +1251,39 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 // rest of scene render
                 switch (setAnalglyphEffect) {
                     case 'none':
-                        renderer.render(scene, camera);
+                        visuals.renderer.render(scene, camera);
                         break;
                     case 'analglyph':
-                        analyglyphEffect.render(scene, camera);
+                        visuals.analyglyphEffect.render(scene, camera);
                         break;
 
                     case 'effect':
                         switch (effectType) {
                             case 'glitch':
-                                glitchPass.enabled = true;
+                                visuals.glitchPass.enabled = true;
                                 break;
                             case 'film':
-                                filmPass.enabled = true;
+                                visuals.filmPass.enabled = true;
                                 break;
                         }
 
                         switch (sceneInfo) {
                             case sceneInfo1:
-                                composer1.render(scene, camera);
+                                visuals.composer1.render(scene, camera);
                                 break;
 
                             case sceneInfo2:
                                 if (effectType !== 'film') {
-                                    composer2.render(scene, camera);
+                                    visuals.composer2.render(scene, camera);
                                 } else if (effectType === 'glitch') {
-                                    composer1.render(scene, camera);
+                                    visuals.composer1.render(scene, camera);
                                 }
 
                                 break;
 
                             case sceneInfo3:
                                 if (effectType !== 'film') {
-                                    composer3.render(scene, camera);
+                                    visuals.composer3.render(scene, camera);
                                 }
                                 break;
                         }
@@ -1449,12 +1423,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 flickerObject(sceneInfo4.plane);
             }
 
-            resizeRendererToDisplaySize(renderer);
-            resizeRendererToDisplaySize(renderer2);
+            resizeRendererToDisplaySize(visuals.renderer);
+            resizeRendererToDisplaySize(visuals.renderer2);
 
-            renderer.setScissorTest(false);
-            renderer.clear(true, true);
-            renderer.setScissorTest(true);
+            visuals.renderer.setScissorTest(false);
+            visuals.renderer.clear(true, true);
+            visuals.renderer.setScissorTest(true);
 
             if (counter === 2) {
                 counter = 0;
