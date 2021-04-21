@@ -139,6 +139,19 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             var beatLineArray = [];
             sceneInfo.beatLineArray = beatLineArray;
 
+            var frustum = new THREE.Frustum();
+            var cameraViewProjectionMatrix = new THREE.Matrix4();
+
+            cameraViewProjectionMatrix.multiplyMatrices(
+                sceneInfo.camera.projectionMatrix,
+                sceneInfo.camera.matrixWorldInverse
+            );
+
+            frustum.setFromProjectionMatrix(cameraViewProjectionMatrix);
+
+            sceneInfo.frustum = frustum;
+            sceneInfo.cameraViewProjectionMatrix = cameraViewProjectionMatrix;
+
             return sceneInfo;
         }
 
@@ -217,12 +230,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             );
             var background = new THREE.TextureLoader().load('./tunnel.jpg');
             background.minFilter = THREE.LinearFilter;
+
             var clearPass = new ClearPass();
             var clearMaskPass = new ClearMaskPass();
-
             var texturePass = new TexturePass(background);
             var outputPass = new ShaderPass(CopyShader);
-
             var bufferTexture = new THREE.WebGLRenderTarget(
                 window.innerHeight,
                 window.innerWidth,
@@ -231,8 +243,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     magFilter: THREE.NearestFilter,
                 }
             );
+
             var bufferScene = new THREE.Scene();
             bufferScene.background = new THREE.Color('white');
+
             var bufferLight = new THREE.DirectionalLight(0xffffff, 0.5);
             const fov = 45;
             const aspect = 2; // the canvas default
@@ -244,6 +258,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 near,
                 far
             );
+
             bufferCamera.position.set(0, 0, 2);
             bufferCamera.lookAt(0, 0, 0);
             sceneInfo.bufferCamera = bufferCamera;
@@ -331,7 +346,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         //add more variety for section changes
         function getSectionEffect(maxRandom) {
             var random = utils.getRandomInt(maxRandom);
-            // console.log(random)
             switch (random) {
                 case 0:
                 case 1:
@@ -792,7 +806,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             console.log('glitched');
             storedEffect = setAnalglyphEffect;
             if (storedEffect === 'effect') {
-                if (utils.getRandomInt(2) === 0) {
+                if (random === 0) {
                     storedEffect = 'analglyph';
                 } else {
                     storedEffect = 'none';
@@ -1304,37 +1318,22 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         testgeometry.vertices.push(new THREE.Vector3(1, 1, 0));
 
         function beatLineAnimation() {
-            var frustum = new THREE.Frustum();
-            var cameraViewProjectionMatrix = new THREE.Matrix4();
-
-            // if(sceneInfo2.camera.position.x > 1 || sceneInfo2.camera.position.x < -1 || sceneInfo2.camera.position.y > 1 || sceneInfo2.camera.position.y < -1) {
-            //   cameraMovement = -(cameraMovement)
-            // }
-            // sceneInfo2.camera.position.x += cameraMovement
-            // sceneInfo2.camera.position.y += cameraMovement
-
-            // every time the camera or objects change position (or every frame)
-
             sceneInfo2.camera.updateMatrixWorld(); // make sure the camera matrix is updated
             sceneInfo2.camera.matrixWorldInverse.getInverse(
                 sceneInfo2.camera.matrixWorld
             );
-            cameraViewProjectionMatrix.multiplyMatrices(
+            sceneInfo2.cameraViewProjectionMatrix.multiplyMatrices(
                 sceneInfo2.camera.projectionMatrix,
                 sceneInfo2.camera.matrixWorldInverse
             );
-            frustum.setFromProjectionMatrix(cameraViewProjectionMatrix);
+            sceneInfo2.frustum.setFromProjectionMatrix(
+                sceneInfo2.cameraViewProjectionMatrix
+            );
 
             //if pen leaves view
-            if (frustum.intersectsObject(sceneInfo2.mesh) === false) {
+            if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
                 sceneInfo2.mesh.position.x = -sceneInfo2.mesh.position.x * 0.7;
-
-                // sceneInfo2.scene.remove(sceneInfo2.beatLine)
-
-                // sceneInfo2.beatLineArray = []
-                // lineCounter = 0
                 beatLinePoints = [];
-                // console.log(beatLinePoints)
 
                 beatLinePoints.push(
                     new THREE.Vector3(
@@ -1356,7 +1355,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             //if pen is in view
             else {
-                // if(drawRate !== 2) {
                 drawRate++;
 
                 beatLinePoints.push(
@@ -1392,12 +1390,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 velocity += acceleration;
                 sceneInfo2.mesh.position.y += velocity;
                 sceneInfo2.mesh.position.x += movementRate;
-
-                // }
-                // else {
-                //   // console.log('skiped')
-                //   drawRate = 0
-                // }
             }
             if (
                 sceneInfo2.mesh.position.y > 150 ||
