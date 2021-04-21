@@ -139,6 +139,15 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             var beatLineArray = [];
             sceneInfo.beatLineArray = beatLineArray;
 
+            const physics = {
+                movementRate: 5,
+                velocity: 0,
+                acceleration: 0,
+                range: 30,
+            };
+
+            sceneInfo.physics = physics;
+
             var frustum = new THREE.Frustum();
             var cameraViewProjectionMatrix = new THREE.Matrix4();
 
@@ -283,9 +292,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 sceneInfo.bufferScene,
                 sceneInfo.camera
             );
-            // composer4.addPass( renderPass4 );
             composer4.addPass(visuals.filmPass);
-            // composer4.addPass(visuals.dotScreenPass)
 
             composer4.addPass(clearPass);
             composer4.addPass(maskPass);
@@ -294,7 +301,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             composer4.addPass(outputPass);
 
             var geometrySegments = 100;
-            // var geometrySegments = 1
 
             var geometry = new THREE.PlaneGeometry(
                 canvas.width / 60,
@@ -302,7 +308,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 geometrySegments,
                 geometrySegments
             );
-            // var geometry = new THREE.PlaneGeometry(2, 2 , 100, 100);
+
             var material = new THREE.MeshBasicMaterial({ map: bufferTexture });
             var plane = new THREE.Mesh(geometry, material);
             plane.position.z = -1;
@@ -310,16 +316,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.geometry = geometry;
             sceneInfo.plane = plane;
 
-            // for (var i = 0; i < plane.geometry.vertices.length; i++) {
-            //   originalGeometry.push(plane.geometry.vertices[i])
-            // }
-
             var originalGeometry = JSON.parse(
                 JSON.stringify(plane.geometry.vertices)
             );
 
             plane.originalGeometry = originalGeometry;
-            // console.log(plane.geometry.vertices === originalGeometry)
 
             var sculptureArray = [
                 './assets/models/venus3.gltf',
@@ -760,6 +761,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             flowToggle = !flowToggle;
         }, 50);
         var flowToggle = true;
+
         function pitchPlaneAnimation() {
             var rowVertices = 143;
             var columnVertices = 131;
@@ -1305,11 +1307,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        var movementRate = 5;
-        var velocity = 0;
-        var acceleration = 0;
-        var range = 30;
-
         function beatLineAnimation() {
             updateSceneFrustum(sceneInfo2);
 
@@ -1342,25 +1339,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 sceneInfo2.beatLine.setVertices(beatLinePoints);
 
-                //Physics
+                updateScenePhysics(sceneInfo2.physics);
 
-                acceleration =
-                    800 / (beatAnimation - sceneInfo2.mesh.position.y);
-
-                if (isFinite(acceleration) !== true) {
-                    acceleration = 0;
-                    velocity *= 0.7;
-                } else if (
-                    sceneInfo2.mesh.position.y > beatAnimation - range &&
-                    sceneInfo2.mesh.position.y < beatAnimation + range
-                ) {
-                    acceleration = 0;
-                    velocity *= 0.7;
-                }
-
-                velocity += acceleration;
-                sceneInfo2.mesh.position.y += velocity;
-                sceneInfo2.mesh.position.x += movementRate;
+                sceneInfo2.mesh.position.y += sceneInfo2.physics.velocity;
+                sceneInfo2.mesh.position.x += sceneInfo2.physics.movementRate;
             }
             if (
                 sceneInfo2.mesh.position.y > 150 ||
@@ -1368,6 +1350,25 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             ) {
                 sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2;
             }
+        }
+
+        function updateScenePhysics(physics) {
+            console.log(physics);
+            physics.acceleration =
+                800 / (beatAnimation - sceneInfo2.mesh.position.y);
+
+            if (isFinite(physics.acceleration) !== true) {
+                physics.acceleration = 0;
+                physics.velocity *= 0.7;
+            } else if (
+                sceneInfo2.mesh.position.y > beatAnimation - physics.range &&
+                sceneInfo2.mesh.position.y < beatAnimation + physics.range
+            ) {
+                physics.acceleration = 0;
+                physics.velocity *= 0.7;
+            }
+
+            physics.velocity += physics.acceleration;
         }
 
         function updateSceneFrustum(sceneInfo) {
@@ -1407,8 +1408,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             visuals.renderer.clear(true, true);
             visuals.renderer.setScissorTest(true);
 
-            if (masking === false) {
-                // console.log('not true')
+            if (!masking) {
                 renderSceneInfo(sceneInfo1);
                 renderSceneInfo(sceneInfo2);
                 renderSceneInfo(sceneInfo3);
@@ -1608,8 +1608,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         timerID = setInterval(() => {
             elapsedDate = new Date();
             elapsedMilliseconds = elapsedDate.getTime() - initialMilliseconds;
-            //console.log("Start timer Elapsed millis", elapsedMilliseconds)
-            //console.log("Tracked time", elapsedTime + elapsedMilliseconds)
             checkForHits();
         }, 1);
     }
