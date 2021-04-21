@@ -1318,17 +1318,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         testgeometry.vertices.push(new THREE.Vector3(1, 1, 0));
 
         function beatLineAnimation() {
-            sceneInfo2.camera.updateMatrixWorld(); // make sure the camera matrix is updated
-            sceneInfo2.camera.matrixWorldInverse.getInverse(
-                sceneInfo2.camera.matrixWorld
-            );
-            sceneInfo2.cameraViewProjectionMatrix.multiplyMatrices(
-                sceneInfo2.camera.projectionMatrix,
-                sceneInfo2.camera.matrixWorldInverse
-            );
-            sceneInfo2.frustum.setFromProjectionMatrix(
-                sceneInfo2.cameraViewProjectionMatrix
-            );
+            updateSceneFrustum(sceneInfo2);
 
             //if pen leaves view
             if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
@@ -1397,6 +1387,21 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             ) {
                 sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2;
             }
+        }
+
+        function updateSceneFrustum(sceneInfo) {
+            sceneInfo.camera.updateMatrixWorld();
+            sceneInfo.camera.matrixWorldInverse.getInverse(
+                sceneInfo.camera.matrixWorld
+            );
+
+            sceneInfo.cameraViewProjectionMatrix.multiplyMatrices(
+                sceneInfo.camera.projectionMatrix,
+                sceneInfo.camera.matrixWorldInverse
+            );
+            sceneInfo.frustum.setFromProjectionMatrix(
+                sceneInfo.cameraViewProjectionMatrix
+            );
         }
 
         var counter = 0;
