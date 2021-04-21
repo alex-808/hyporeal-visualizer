@@ -1305,24 +1305,19 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        var lineCounter = 0;
         var movementRate = 5;
         var velocity = 0;
         var acceleration = 0;
-        var cameraMovement = 1;
         var range = 30;
-        var drawRate = 0;
-        var test = new MeshLine();
-        var testgeometry = new THREE.Geometry();
-        testgeometry.vertices.push(new THREE.Vector3(1, 1, 0));
-        testgeometry.vertices.push(new THREE.Vector3(1, 1, 0));
 
         function beatLineAnimation() {
             updateSceneFrustum(sceneInfo2);
 
             //if pen leaves view
             if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
+                // Reset pen position
                 sceneInfo2.mesh.position.x = -sceneInfo2.mesh.position.x * 0.7;
+
                 beatLinePoints = [];
 
                 beatLinePoints.push(
@@ -1332,21 +1327,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         0
                     )
                 );
-                beatLinePoints.push(
-                    new THREE.Vector3(
-                        sceneInfo2.mesh.position.x,
-                        sceneInfo2.mesh.position.y,
-                        0
-                    )
-                );
-                sceneInfo2.beatLine.setVertices(beatLinePoints);
-                // sceneInfo2.scene.add(sceneInfo2.beatLine)
-            }
 
+                sceneInfo2.beatLine.setVertices(beatLinePoints);
+            }
             //if pen is in view
             else {
-                drawRate++;
-
                 beatLinePoints.push(
                     new THREE.Vector3(
                         sceneInfo2.mesh.position.x,
@@ -1356,10 +1341,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 );
 
                 sceneInfo2.beatLine.setVertices(beatLinePoints);
-                // sceneInfo2.beatLineArray[lineCounter] = new THREE.Mesh(sceneInfo2.beatLine.geometry, sceneInfo2.beatLineMaterial)
-
-                // sceneInfo2.scene.add(sceneInfo2.beatLineArray[lineCounter])
-                lineCounter++;
 
                 //Physics
 
@@ -1404,7 +1385,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             );
         }
 
-        var counter = 0;
         function render(time) {
             pitchPlaneAnimation();
             beatLineAnimation();
@@ -1427,11 +1407,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             visuals.renderer.clear(true, true);
             visuals.renderer.setScissorTest(true);
 
-            if (counter === 2) {
-                counter = 0;
-            } else {
-                counter++;
-            }
             if (masking === false) {
                 // console.log('not true')
                 renderSceneInfo(sceneInfo1);
