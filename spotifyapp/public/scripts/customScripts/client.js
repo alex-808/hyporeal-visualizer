@@ -65,6 +65,53 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.camera.fov = 75;
             sceneInfo.mesh = plane;
 
+            sceneInfo.animation = function () {
+                var rowVertices = 143;
+                var columnVertices = 131;
+
+                if (planeStoredBackRow === planeBackRowAnimation) {
+                    //Decay effect &
+                    for (var i = 0; i < sceneInfo1.planeDimension; i++) {
+                        if (sceneInfo1.mesh.geometry.vertices[i].z > 0) {
+                            if (flowToggle === true) {
+                                sceneInfo1.mesh.geometry.vertices[
+                                    i
+                                ].z -= 0.0125;
+                            } else {
+                                sceneInfo1.mesh.geometry.vertices[
+                                    i
+                                ].z += 0.0025;
+                            }
+                        }
+                    }
+                } else {
+                    planeStoredBackRow = planeBackRowAnimation;
+                    for (var i = 0; i < sceneInfo1.planeDimension; i++) {
+                        sceneInfo1.mesh.geometry.vertices[i].z =
+                            planeStoredBackRow[i];
+                    }
+                }
+
+                sceneInfo1.mesh.geometry.verticesNeedUpdate = true;
+                //Push backrow forward
+                for (
+                    columnVertices;
+                    columnVertices >= 11;
+                    columnVertices -= sceneInfo1.planeDimension
+                ) {
+                    for (
+                        rowVertices;
+                        rowVertices > columnVertices;
+                        rowVertices--
+                    ) {
+                        sceneInfo1.mesh.geometry.vertices[rowVertices].z =
+                            sceneInfo1.mesh.geometry.vertices[
+                                rowVertices - sceneInfo1.planeDimension
+                            ].z;
+                    }
+                }
+            };
+
             return sceneInfo;
         }
 
@@ -162,6 +209,53 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.frustum = frustum;
             sceneInfo.cameraViewProjectionMatrix = cameraViewProjectionMatrix;
 
+            sceneInfo.animation = function () {
+                updateSceneFrustum(sceneInfo2);
+
+                //if pen leaves view
+                if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
+                    // Reset pen position
+                    sceneInfo2.mesh.position.x =
+                        -sceneInfo2.mesh.position.x * 0.7;
+
+                    beatLinePoints = [];
+
+                    beatLinePoints.push(
+                        new THREE.Vector3(
+                            sceneInfo2.mesh.position.x,
+                            sceneInfo2.mesh.position.y,
+                            0
+                        )
+                    );
+
+                    sceneInfo2.beatLine.setVertices(beatLinePoints);
+                }
+                //if pen is in view
+                else {
+                    beatLinePoints.push(
+                        new THREE.Vector3(
+                            sceneInfo2.mesh.position.x,
+                            sceneInfo2.mesh.position.y,
+                            0
+                        )
+                    );
+
+                    sceneInfo2.beatLine.setVertices(beatLinePoints);
+
+                    updateScenePhysics(sceneInfo2.physics);
+
+                    sceneInfo2.mesh.position.y += sceneInfo2.physics.velocity;
+                    sceneInfo2.mesh.position.x +=
+                        sceneInfo2.physics.movementRate;
+                }
+                if (
+                    sceneInfo2.mesh.position.y > 150 ||
+                    sceneInfo2.mesh.position.y < -150
+                ) {
+                    sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2;
+                }
+            };
+
             return sceneInfo;
         }
 
@@ -228,6 +322,280 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             sceneInfo.neoLinePoints = neoLinePoints;
             sceneInfo.scene.add(neoLine);
+
+            sceneInfo.animation = function () {
+                if (storedNeoDimension !== neoDimension) {
+                    storedNeoDimension = neoDimension;
+                    sceneInfo3.scene.remove(sceneInfo3.plane);
+                    sceneInfo3.planeGeometry = new THREE.PlaneGeometry(
+                        sceneInfo3.planeWidth,
+                        sceneInfo3.planeHeight,
+                        storedNeoDimension,
+                        storedNeoDimension
+                    );
+                    sceneInfo3.plane = new THREE.Mesh(
+                        sceneInfo3.planeGeometry,
+                        sceneInfo3.planeMaterial
+                    );
+                    //sceneInfo3.scene.add(sceneInfo3.plane)
+
+                    var q = 0;
+                    var k = 0;
+                    squaresArray = [];
+                    for (var i = 0; i < neoDimension * neoDimension; i++) {
+                        squaresArray[i] = [];
+                        if (i % neoDimension === 0 && i > 0) {
+                            q++;
+                        }
+                        for (var j = 0; j < neoDimension; j++) {
+                            if (j < 2) {
+                                k = 0;
+                                squaresArray[i][j] =
+                                    sceneInfo3.plane.geometry.vertices[
+                                        i + j + q
+                                    ];
+                            } else {
+                                k = neoDimension - 1;
+                                squaresArray[i][j] =
+                                    sceneInfo3.plane.geometry.vertices[
+                                        i + j + k + q
+                                    ];
+                            }
+                        }
+                    }
+                    if (squaresArray.length === 0) {
+                        console.log('true');
+                        sceneInfo3.boxWidth = 0;
+                    } else {
+                        sceneInfo3.boxWidth = Math.abs(
+                            squaresArray[0][0].x - squaresArray[0][1].x
+                        );
+                    }
+                }
+
+                if (allowGlitchBars < 1) {
+                    allowGlitchReset = true;
+                }
+                if (maskingBars < 1 && masking === true) {
+                    masking = false;
+                    setTimeout(function () {
+                        undoScreenChange();
+                    }, 2000);
+                }
+                if (
+                    neoStoredSectionCounter !== sectionCounter &&
+                    sectionCounter &&
+                    trackData
+                ) {
+                    // console.log('ran1')
+                    neoToggle = true;
+
+                    neoStoredSectionCounter = sectionCounter;
+
+                    neoStoredBeatCounter = beatCounter;
+                }
+                var planeGeometry = new THREE.PlaneBufferGeometry(
+                    sceneInfo3.boxWidth,
+                    sceneInfo3.boxWidth
+                );
+                var planeMaterialBlue = new THREE.MeshBasicMaterial({
+                    color: 'blue',
+                });
+                var planeMaterialRed = new THREE.MeshBasicMaterial({
+                    color: 'red',
+                });
+
+                if (
+                    trackData !== undefined &&
+                    squaresArray[neoStoredBarCounter] !== undefined
+                ) {
+                    if (
+                        trackData.sectionNearestBarStart[
+                            neoStoredSectionCounter + 1
+                        ] === trackData.beatsStart[beatCounter + 1] &&
+                        neoToggle === true
+                    ) {
+                        //
+                        neoToggle = false;
+                        if (utils.getRandomInt(2) === 0) {
+                            console.log('glitch reset disabled');
+                            allowGlitchReset = false;
+                            allowGlitchBars = 4;
+                        }
+
+                        neoStoredBeatCounter = beatCounter;
+                    }
+                }
+
+                if (
+                    neoStoredBarCounter !== barCounter &&
+                    barCounter !== undefined
+                ) {
+                    // allowGlitchReset = true
+                    allowGlitchBars--;
+                    maskingBars--;
+                    neoStoredBarCounter = barCounter;
+                    glitchDistort(sceneInfo4.plane);
+                    if (utils.getRandomInt(4) === 0) {
+                        totalFader();
+                    }
+
+                    if (utils.getRandomInt(4) === 0) {
+                        glitchTheBar = 4;
+                    }
+
+                    if (masking === false) {
+                        // undoBigScreen()
+                    }
+                    console.log(
+                        trackData.barsStart[barCounter],
+                        trackData.sectionNearestBarStart[sectionCounter + 1]
+                    );
+                    if (
+                        trackData.sectionNearestBarStart[sectionCounter + 1] ===
+                            trackData.barsStart[barCounter] &&
+                        trackData.barsStart[barCounter] !== undefined
+                    ) {
+                        getSectionEffect(10);
+                        var segColorIndex =
+                            timbreSum1 % 2 === 0
+                                ? planeMaterialRed
+                                : planeMaterialBlue;
+
+                        var plane = new THREE.Mesh(
+                            planeGeometry,
+                            segColorIndex
+                        );
+                        plane.position.x =
+                            squaresArray[neoStoredBarCounter][0].x +
+                            sceneInfo3.boxWidth / 2;
+                        plane.position.y =
+                            squaresArray[neoStoredBarCounter][0].y -
+                            sceneInfo3.boxWidth / 2;
+                        plane.position.z =
+                            squaresArray[neoStoredBarCounter][0].z - 0.01;
+                        neoParagraphArray.push(plane);
+                        sceneInfo3.scene.add(plane);
+                    }
+
+                    // bigScreen(sceneInfoArray[getRandomInt(4)])
+
+                    sceneInfo3.neoLinePoints = [];
+
+                    boxDivisions = sceneInfo3.boxWidth / 7;
+                    // console.log("neoLineAnim barCounter", barCounter)
+                    // console.log(neoStoredBarCounter)
+                    if (
+                        squaresArray[neoStoredBarCounter] !== undefined &&
+                        squaresArray[neoStoredBarCounter] !== undefined
+                    ) {
+                        sceneInfo3.pen.position.x =
+                            squaresArray[neoStoredBarCounter][0].x +
+                            sceneInfo3.boxWidth / 2;
+                        sceneInfo3.pen.position.y =
+                            squaresArray[neoStoredBarCounter][0].y -
+                            sceneInfo3.boxWidth / 2;
+                    }
+
+                    for (var i = 0; i < neoLineArray.length; i++) {
+                        sceneInfo3.scene.add(neoLineArray[i]);
+                        //delete neoLineArray[i]
+                    }
+
+                    neoLineArray = [];
+                    if (neoParagraphArray.length > neoMaxWords) {
+                        // console.log(neoParagraphArray.length - neoMaxWords)
+                        for (
+                            var i = 0;
+                            (i = neoParagraphArray.length - neoMaxWords);
+                            i++
+                        ) {
+                            sceneInfo3.scene.remove(neoParagraphArray[0]);
+                            neoParagraphArray.shift();
+                            // console.log('removed extra')
+                        }
+                    }
+                }
+
+                if (neoStoredBeatCounter !== beatCounter && glitchTheBar > 0) {
+                    glitchTheBar--;
+                    glitchDistort(sceneInfo4.plane);
+                }
+
+                neoStoredBeatCounter = beatCounter;
+
+                if (
+                    neoStoredSegCounter !== segmentCounter &&
+                    squaresArray[neoStoredBarCounter] !== undefined &&
+                    squaresArray[neoStoredBarCounter] !== undefined
+                ) {
+                    neoStoredSegCounter = segmentCounter;
+                    sceneInfo3.neoLinePoints.push(
+                        new THREE.Vector2(
+                            squaresArray[neoStoredBarCounter][0].x +
+                                timbreSum1 * boxDivisions +
+                                sceneInfo3.boxWidth / 2,
+                            squaresArray[neoStoredBarCounter][0].y +
+                                (timbreSum2 * boxDivisions -
+                                    sceneInfo3.boxWidth / 2)
+                        )
+                    );
+
+                    twoCounter++;
+                }
+                var material = new THREE.LineBasicMaterial({ color: 'white' });
+                if (twoCounter === 3) {
+                    if (timbreSum1 % 2 === 0) {
+                        //console.log("line")
+                        var geometry = new THREE.BufferGeometry().setFromPoints(
+                            sceneInfo3.neoLinePoints
+                        );
+                        var line = new THREE.Line(geometry, material);
+                        neoLineArray.push(line);
+                        neoParagraphArray.push(line);
+                        geometry.dispose();
+                    } else {
+                        //console.log("curve")
+                        var curve = new THREE.SplineCurve(
+                            sceneInfo3.neoLinePoints
+                        );
+                        var points = curve.getPoints(50);
+                        var geometry = new THREE.BufferGeometry().setFromPoints(
+                            points
+                        );
+                        var splineObject = new THREE.Line(geometry, material);
+                        neoLineArray.push(splineObject);
+                        neoParagraphArray.push(splineObject);
+                        geometry.dispose();
+                    }
+                    // need to ensure that these points are being cleaned up properly after every 3
+                    sceneInfo3.neoLinePoints.shift();
+                    sceneInfo3.neoLinePoints.shift();
+                    //console.log(sceneInfo3.neoLinePoints)
+                    twoCounter = 0;
+                }
+
+                if (clearParagraph === true) {
+                    console.log('clearparagraph');
+                    clearParagraph = false;
+
+                    for (var i = 0; i < neoParagraphArray.length; i++) {
+                        console.log('removed');
+                        sceneInfo3.scene.remove(neoParagraphArray[i]);
+                    }
+                    neoLineArray = [];
+                    //sceneInfo3.neoLinePoints = []
+                    neoParagraphArray = [];
+                    if (utils.getRandomInt(2) === 0) {
+                        faderInverted = !faderInverted;
+                        console.log('faderInverted', faderInverted);
+                        if (trackData) {
+                            totalFader();
+                        }
+                    }
+                    checkForUndoAnalGlyphControl = true;
+                }
+            };
 
             return sceneInfo;
         }
@@ -340,6 +708,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 // console.log(object)
             });
+
+            sceneInfo.animation = function () {
+                if (flickerToggle === true) {
+                    sceneInfo4.sculpture.rotation.y += 0.01;
+                    flickerObject(sceneInfo4.plane);
+                }
+            };
             return sceneInfo;
         }
         var previous;
@@ -474,316 +849,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var maskingBars = 0;
         var neoToggle = true;
 
-        function neoLineAnimation() {
-            if (storedNeoDimension !== neoDimension) {
-                storedNeoDimension = neoDimension;
-                sceneInfo3.scene.remove(sceneInfo3.plane);
-                sceneInfo3.planeGeometry = new THREE.PlaneGeometry(
-                    sceneInfo3.planeWidth,
-                    sceneInfo3.planeHeight,
-                    storedNeoDimension,
-                    storedNeoDimension
-                );
-                sceneInfo3.plane = new THREE.Mesh(
-                    sceneInfo3.planeGeometry,
-                    sceneInfo3.planeMaterial
-                );
-                //sceneInfo3.scene.add(sceneInfo3.plane)
-
-                var q = 0;
-                var k = 0;
-                squaresArray = [];
-                for (var i = 0; i < neoDimension * neoDimension; i++) {
-                    squaresArray[i] = [];
-                    if (i % neoDimension === 0 && i > 0) {
-                        q++;
-                    }
-                    for (var j = 0; j < neoDimension; j++) {
-                        if (j < 2) {
-                            k = 0;
-                            squaresArray[i][j] =
-                                sceneInfo3.plane.geometry.vertices[i + j + q];
-                        } else {
-                            k = neoDimension - 1;
-                            squaresArray[i][j] =
-                                sceneInfo3.plane.geometry.vertices[
-                                    i + j + k + q
-                                ];
-                        }
-                    }
-                }
-                if (squaresArray.length === 0) {
-                    console.log('true');
-                    sceneInfo3.boxWidth = 0;
-                } else {
-                    sceneInfo3.boxWidth = Math.abs(
-                        squaresArray[0][0].x - squaresArray[0][1].x
-                    );
-                }
-            }
-
-            if (allowGlitchBars < 1) {
-                allowGlitchReset = true;
-            }
-            if (maskingBars < 1 && masking === true) {
-                masking = false;
-                setTimeout(function () {
-                    undoScreenChange();
-                }, 2000);
-            }
-            if (
-                neoStoredSectionCounter !== sectionCounter &&
-                sectionCounter &&
-                trackData
-            ) {
-                // console.log('ran1')
-                neoToggle = true;
-
-                neoStoredSectionCounter = sectionCounter;
-
-                neoStoredBeatCounter = beatCounter;
-            }
-            var planeGeometry = new THREE.PlaneBufferGeometry(
-                sceneInfo3.boxWidth,
-                sceneInfo3.boxWidth
-            );
-            var planeMaterialBlue = new THREE.MeshBasicMaterial({
-                color: 'blue',
-            });
-            var planeMaterialRed = new THREE.MeshBasicMaterial({
-                color: 'red',
-            });
-
-            if (
-                trackData !== undefined &&
-                squaresArray[neoStoredBarCounter] !== undefined
-            ) {
-                if (
-                    trackData.sectionNearestBarStart[
-                        neoStoredSectionCounter + 1
-                    ] === trackData.beatsStart[beatCounter + 1] &&
-                    neoToggle === true
-                ) {
-                    //
-                    neoToggle = false;
-                    if (utils.getRandomInt(2) === 0) {
-                        console.log('glitch reset disabled');
-                        allowGlitchReset = false;
-                        allowGlitchBars = 4;
-                    }
-
-                    neoStoredBeatCounter = beatCounter;
-                }
-            }
-
-            if (
-                neoStoredBarCounter !== barCounter &&
-                barCounter !== undefined
-            ) {
-                // allowGlitchReset = true
-                allowGlitchBars--;
-                maskingBars--;
-                neoStoredBarCounter = barCounter;
-                glitchDistort(sceneInfo4.plane);
-                if (utils.getRandomInt(4) === 0) {
-                    totalFader();
-                }
-
-                if (utils.getRandomInt(4) === 0) {
-                    glitchTheBar = 4;
-                }
-
-                if (masking === false) {
-                    // undoBigScreen()
-                }
-                console.log(
-                    trackData.barsStart[barCounter],
-                    trackData.sectionNearestBarStart[sectionCounter + 1]
-                );
-                if (
-                    trackData.sectionNearestBarStart[sectionCounter + 1] ===
-                        trackData.barsStart[barCounter] &&
-                    trackData.barsStart[barCounter] !== undefined
-                ) {
-                    getSectionEffect(10);
-                    var segColorIndex =
-                        timbreSum1 % 2 === 0
-                            ? planeMaterialRed
-                            : planeMaterialBlue;
-
-                    var plane = new THREE.Mesh(planeGeometry, segColorIndex);
-                    plane.position.x =
-                        squaresArray[neoStoredBarCounter][0].x +
-                        sceneInfo3.boxWidth / 2;
-                    plane.position.y =
-                        squaresArray[neoStoredBarCounter][0].y -
-                        sceneInfo3.boxWidth / 2;
-                    plane.position.z =
-                        squaresArray[neoStoredBarCounter][0].z - 0.01;
-                    neoParagraphArray.push(plane);
-                    sceneInfo3.scene.add(plane);
-                }
-
-                // bigScreen(sceneInfoArray[getRandomInt(4)])
-
-                sceneInfo3.neoLinePoints = [];
-
-                boxDivisions = sceneInfo3.boxWidth / 7;
-                // console.log("neoLineAnim barCounter", barCounter)
-                // console.log(neoStoredBarCounter)
-                if (
-                    squaresArray[neoStoredBarCounter] !== undefined &&
-                    squaresArray[neoStoredBarCounter] !== undefined
-                ) {
-                    sceneInfo3.pen.position.x =
-                        squaresArray[neoStoredBarCounter][0].x +
-                        sceneInfo3.boxWidth / 2;
-                    sceneInfo3.pen.position.y =
-                        squaresArray[neoStoredBarCounter][0].y -
-                        sceneInfo3.boxWidth / 2;
-                }
-
-                for (var i = 0; i < neoLineArray.length; i++) {
-                    sceneInfo3.scene.add(neoLineArray[i]);
-                    //delete neoLineArray[i]
-                }
-
-                neoLineArray = [];
-                if (neoParagraphArray.length > neoMaxWords) {
-                    // console.log(neoParagraphArray.length - neoMaxWords)
-                    for (
-                        var i = 0;
-                        (i = neoParagraphArray.length - neoMaxWords);
-                        i++
-                    ) {
-                        sceneInfo3.scene.remove(neoParagraphArray[0]);
-                        neoParagraphArray.shift();
-                        // console.log('removed extra')
-                    }
-                }
-            }
-
-            if (neoStoredBeatCounter !== beatCounter && glitchTheBar > 0) {
-                glitchTheBar--;
-                glitchDistort(sceneInfo4.plane);
-            }
-
-            neoStoredBeatCounter = beatCounter;
-
-            if (
-                neoStoredSegCounter !== segmentCounter &&
-                squaresArray[neoStoredBarCounter] !== undefined &&
-                squaresArray[neoStoredBarCounter] !== undefined
-            ) {
-                neoStoredSegCounter = segmentCounter;
-                sceneInfo3.neoLinePoints.push(
-                    new THREE.Vector2(
-                        squaresArray[neoStoredBarCounter][0].x +
-                            timbreSum1 * boxDivisions +
-                            sceneInfo3.boxWidth / 2,
-                        squaresArray[neoStoredBarCounter][0].y +
-                            (timbreSum2 * boxDivisions -
-                                sceneInfo3.boxWidth / 2)
-                    )
-                );
-
-                twoCounter++;
-            }
-            var material = new THREE.LineBasicMaterial({ color: 'white' });
-            if (twoCounter === 3) {
-                if (timbreSum1 % 2 === 0) {
-                    //console.log("line")
-                    var geometry = new THREE.BufferGeometry().setFromPoints(
-                        sceneInfo3.neoLinePoints
-                    );
-                    var line = new THREE.Line(geometry, material);
-                    neoLineArray.push(line);
-                    neoParagraphArray.push(line);
-                    geometry.dispose();
-                } else {
-                    //console.log("curve")
-                    var curve = new THREE.SplineCurve(sceneInfo3.neoLinePoints);
-                    var points = curve.getPoints(50);
-                    var geometry = new THREE.BufferGeometry().setFromPoints(
-                        points
-                    );
-                    var splineObject = new THREE.Line(geometry, material);
-                    neoLineArray.push(splineObject);
-                    neoParagraphArray.push(splineObject);
-                    geometry.dispose();
-                }
-                // need to ensure that these points are being cleaned up properly after every 3
-                sceneInfo3.neoLinePoints.shift();
-                sceneInfo3.neoLinePoints.shift();
-                //console.log(sceneInfo3.neoLinePoints)
-                twoCounter = 0;
-            }
-
-            if (clearParagraph === true) {
-                console.log('clearparagraph');
-                clearParagraph = false;
-
-                for (var i = 0; i < neoParagraphArray.length; i++) {
-                    console.log('removed');
-                    sceneInfo3.scene.remove(neoParagraphArray[i]);
-                }
-                neoLineArray = [];
-                //sceneInfo3.neoLinePoints = []
-                neoParagraphArray = [];
-                if (utils.getRandomInt(2) === 0) {
-                    faderInverted = !faderInverted;
-                    console.log('faderInverted', faderInverted);
-                    if (trackData) {
-                        totalFader();
-                    }
-                }
-                checkForUndoAnalGlyphControl = true;
-            }
-        }
-
         setInterval(function () {
             flowToggle = !flowToggle;
         }, 50);
         var flowToggle = true;
-
-        function pitchPlaneAnimation() {
-            var rowVertices = 143;
-            var columnVertices = 131;
-
-            if (planeStoredBackRow === planeBackRowAnimation) {
-                //Decay effect &
-                for (var i = 0; i < sceneInfo1.planeDimension; i++) {
-                    if (sceneInfo1.mesh.geometry.vertices[i].z > 0) {
-                        if (flowToggle === true) {
-                            sceneInfo1.mesh.geometry.vertices[i].z -= 0.0125;
-                        } else {
-                            sceneInfo1.mesh.geometry.vertices[i].z += 0.0025;
-                        }
-                    }
-                }
-            } else {
-                planeStoredBackRow = planeBackRowAnimation;
-                for (var i = 0; i < sceneInfo1.planeDimension; i++) {
-                    sceneInfo1.mesh.geometry.vertices[i].z =
-                        planeStoredBackRow[i];
-                }
-            }
-
-            sceneInfo1.mesh.geometry.verticesNeedUpdate = true;
-            //Push backrow forward
-            for (
-                columnVertices;
-                columnVertices >= 11;
-                columnVertices -= sceneInfo1.planeDimension
-            ) {
-                for (rowVertices; rowVertices > columnVertices; rowVertices--) {
-                    sceneInfo1.mesh.geometry.vertices[rowVertices].z =
-                        sceneInfo1.mesh.geometry.vertices[
-                            rowVertices - sceneInfo1.planeDimension
-                        ].z;
-                }
-            }
-        }
 
         var storedEffect;
         function totalGlitch() {
@@ -1291,51 +1360,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        function beatLineAnimation() {
-            updateSceneFrustum(sceneInfo2);
-
-            //if pen leaves view
-            if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
-                // Reset pen position
-                sceneInfo2.mesh.position.x = -sceneInfo2.mesh.position.x * 0.7;
-
-                beatLinePoints = [];
-
-                beatLinePoints.push(
-                    new THREE.Vector3(
-                        sceneInfo2.mesh.position.x,
-                        sceneInfo2.mesh.position.y,
-                        0
-                    )
-                );
-
-                sceneInfo2.beatLine.setVertices(beatLinePoints);
-            }
-            //if pen is in view
-            else {
-                beatLinePoints.push(
-                    new THREE.Vector3(
-                        sceneInfo2.mesh.position.x,
-                        sceneInfo2.mesh.position.y,
-                        0
-                    )
-                );
-
-                sceneInfo2.beatLine.setVertices(beatLinePoints);
-
-                updateScenePhysics(sceneInfo2.physics);
-
-                sceneInfo2.mesh.position.y += sceneInfo2.physics.velocity;
-                sceneInfo2.mesh.position.x += sceneInfo2.physics.movementRate;
-            }
-            if (
-                sceneInfo2.mesh.position.y > 150 ||
-                sceneInfo2.mesh.position.y < -150
-            ) {
-                sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2;
-            }
-        }
-
         function updateScenePhysics(physics) {
             physics.acceleration =
                 800 / (beatAnimation - sceneInfo2.mesh.position.y);
@@ -1369,20 +1393,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             );
         }
 
-        function render(time) {
-            pitchPlaneAnimation();
-            beatLineAnimation();
-            //neoline accounts for increasing cpu usage over time
-            neoLineAnimation();
+        function render() {
+            sceneInfo1.animation();
+            sceneInfo2.animation();
+            sceneInfo3.animation();
 
             if (checkForUndoAnalGlyphControl === true) {
                 undoFader(analglyphBarLength);
             }
 
-            if (flickerToggle === true) {
-                sceneInfo4.sculpture.rotation.y += 0.01;
-                flickerObject(sceneInfo4.plane);
-            }
+            sceneInfo4.animation();
 
             resizeRendererToDisplaySize(visuals.renderer);
             resizeRendererToDisplaySize(visuals.renderer2);
