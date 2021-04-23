@@ -1420,26 +1420,55 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var tatumCounter = 0;
     var segmentCounter = 0;
 
-    function findNextDivision(
-        divisionNameStart,
-        divisionCounter,
-        divisionName
-    ) {
-        var i = 0;
-        var truthCond = true;
+    // Might be able to implement this object but I need a better understanding of how the divisionCounters are currently used first
 
-        while (truthCond === true && i < divisionNameStart.length) {
+    const divisionCounters = {
+        section: 0,
+        bar: 0,
+        beat: 0,
+        tatum: 0,
+        segment: 0,
+        _findNextDivision(trackDataDivision) {
+            var i = 0;
+            while (i < trackDataDivision.length) {
+                if (trackDataDivision[i] > trackPosition) {
+                    return i;
+                }
+                i++;
+            }
+        },
+        updateDivisionCounters() {
+            this.segment = this._findNextDivision(trackData.segmentsStart);
+            this.tatum = findNextDivision(trackData.tatumsStart);
+            this.beat = findNextDivision(trackData.beatsStart);
+            this.bar = findNextDivision(trackData.barsStart);
+            this.section =
+                findNextDivision(trackData.sectionNearestBarStart) - 1;
+        },
+    };
+
+    function findNextDivision(divisionNameStart, divisionCounter) {
+        var i = 0;
+        while (i < divisionNameStart.length) {
             if (divisionNameStart[i] > trackPosition) {
                 divisionCounter = i;
-                if (divisionName === 'bar') {
-                    //console.log("Find next division", divisionName + "Counter", divisionCounter)
-                }
-
-                truthCond = false;
                 return divisionCounter;
             }
             i++;
         }
+    }
+
+    function updateDivisionCounters() {
+        segmentCounter = findNextDivision(
+            trackData.segmentsStart,
+            segmentCounter
+        );
+        tatumCounter = findNextDivision(trackData.tatumsStart, tatumCounter);
+        beatCounter = findNextDivision(trackData.beatsStart, beatCounter);
+        barCounter = findNextDivision(trackData.barsStart, barCounter);
+        sectionCounter =
+            findNextDivision(trackData.sectionNearestBarStart, sectionCounter) -
+            1;
     }
 
     function checkForHits() {
@@ -1550,36 +1579,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     function timerControl(paused) {
         if (paused === false) {
-            startTimer();
+            startBetweenQueryTimer();
         } else if (paused === true) {
-            stopTimer();
+            stopBetweenQueryTimer();
         }
     }
 
-    function startTimer() {
-        stopTimer();
-        segmentCounter = findNextDivision(
-            trackData.segmentsStart,
-            segmentCounter,
-            'segment'
-        );
-        tatumCounter = findNextDivision(
-            trackData.tatumsStart,
-            tatumCounter,
-            'tatum'
-        );
-        beatCounter = findNextDivision(
-            trackData.beatsStart,
-            beatCounter,
-            'beat'
-        );
-        barCounter = findNextDivision(trackData.barsStart, barCounter, 'bar');
-        sectionCounter =
-            findNextDivision(
-                trackData.sectionNearestBarStart,
-                sectionCounter,
-                'section'
-            ) - 1;
+    function startBetweenQueryTimer() {
+        stopBetweenQueryTimer();
 
         //console.log("Start timer elapsed time", elapsedTime)
         elapsedMilliseconds = 0;
@@ -1594,7 +1601,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }, 1);
     }
 
-    function stopTimer() {
+    function stopBetweenQueryTimer() {
         clearInterval(timerID);
     }
 
@@ -1638,7 +1645,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     player.addListener('player_state_changed', (state) => {
         console.log(state);
         if (!state) {
-            stopTimer();
+            stopBetweenQueryTimer();
             stopTrackPositionQuery();
             return;
         }
@@ -1689,14 +1696,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         trackPositionQuery = setInterval(() => {
             player.getCurrentState().then((state) => {
                 if (!state) {
-                    // console.log('No music playing');
                     return;
                 }
                 trackPosition = state['position'];
                 elapsedTime = trackPosition;
-                // console.log('Query trackPosition', trackPosition);
-                if (state['paused'] === false && trackData !== undefined) {
-                    startTimer();
+                if (!state['paused'] && trackData) {
+                    updateDivisionCounters();
+                    startBetweenQueryTimer();
                 }
             });
         }, trackPositionQueryRate);
