@@ -22,7 +22,6 @@ window.addEventListener('beforeunload', function (event) {
 
 window.onSpotifyWebPlaybackSDKReady = () => {
     var beatAnimation = 0;
-    var planeDimension = 12;
     var planeBackRowAnimation = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var planeStoredBackRow = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var neoDimension;
@@ -38,6 +37,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
         function setupScene1() {
             const sceneInfo = makeScene(document.querySelector('#pitchplane'));
+            var planeDimension = 12;
+            sceneInfo.planeDimension = planeDimension;
 
             var geometry = new THREE.PlaneGeometry(
                 2,
@@ -571,27 +572,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         allowGlitchBars = 4;
                     }
 
-                    // console.log('ran2')
-
-                    //neoStoredSectionCounter++
                     neoStoredBeatCounter = beatCounter;
-                    // var segColorIndex = timbreSum1 % 2 === 0 ? planeMaterialRed : planeMaterialBlue
-
-                    // var plane = new THREE.Mesh( planeGeometry, segColorIndex );
-                    // plane.position.x = squaresArray[neoStoredBarCounter][0].x + sceneInfo3.boxWidth/2
-                    // plane.position.y = squaresArray[neoStoredBarCounter][0].y - sceneInfo3.boxWidth/2
-                    // plane.position.z = squaresArray[neoStoredBarCounter][0].z - 0.01
-                    // neoParagraphArray.push(plane)
-                    // sceneInfo3.scene.add(plane)
                 }
             }
 
-            // if (neoStoredBarCounter > barCounter) {
-            //   for (var i = neoStoredBarCounter; i > -1 ; i-- ) {
-            //     sceneInfo3.scene.remove(neoParagraphArray[i])
-            //   }
-            //   neoStoredBarCounter = barCounter
-            // }
             if (
                 neoStoredBarCounter !== barCounter &&
                 barCounter !== undefined
@@ -768,7 +752,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             if (planeStoredBackRow === planeBackRowAnimation) {
                 //Decay effect &
-                for (var i = 0; i < planeDimension; i++) {
+                for (var i = 0; i < sceneInfo1.planeDimension; i++) {
                     if (sceneInfo1.mesh.geometry.vertices[i].z > 0) {
                         if (flowToggle === true) {
                             sceneInfo1.mesh.geometry.vertices[i].z -= 0.0125;
@@ -779,7 +763,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }
             } else {
                 planeStoredBackRow = planeBackRowAnimation;
-                for (var i = 0; i < planeDimension; i++) {
+                for (var i = 0; i < sceneInfo1.planeDimension; i++) {
                     sceneInfo1.mesh.geometry.vertices[i].z =
                         planeStoredBackRow[i];
                 }
@@ -790,12 +774,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             for (
                 columnVertices;
                 columnVertices >= 11;
-                columnVertices -= planeDimension
+                columnVertices -= sceneInfo1.planeDimension
             ) {
                 for (rowVertices; rowVertices > columnVertices; rowVertices--) {
                     sceneInfo1.mesh.geometry.vertices[rowVertices].z =
                         sceneInfo1.mesh.geometry.vertices[
-                            rowVertices - planeDimension
+                            rowVertices - sceneInfo1.planeDimension
                         ].z;
                 }
             }
@@ -1353,7 +1337,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         function updateScenePhysics(physics) {
-            console.log(physics);
             physics.acceleration =
                 800 / (beatAnimation - sceneInfo2.mesh.position.y);
 
@@ -1566,7 +1549,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
     function timerControl(paused) {
-        // console.log('timerControl')
         if (paused === false) {
             startTimer();
         } else if (paused === true) {
@@ -1651,63 +1633,60 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var currentTrackID;
     var stored_track_id = 0;
     var trackData;
-    var queryRunning;
+
     // Playback status updates
     player.addListener('player_state_changed', (state) => {
-        if (!state && queryRunning === true) {
-            queryRunning = false;
+        console.log(state);
+        if (!state) {
             stopTimer();
             stopTrackPositionQuery();
-        } else if (queryRunning !== true) {
-            queryRunning = true;
-            startTrackPositionQuery();
+            return;
         }
-        if (state) {
-            // elapsedTime = trackPosition;
-            currentTrackID = state['track_window']['current_track']['id'];
 
-            // trackPosition = state['position'];
-            if (currentTrackID !== stored_track_id) {
-                console.log(trackData);
-                trackPosition = 0;
-                stored_track_id = currentTrackID;
-                clearParagraph = true;
+        startTrackPositionQuery();
+        currentTrackID = state['track_window']['current_track']['id'];
 
-                console.log('New track detected:', stored_track_id);
-                console.log('Track position', trackPosition);
+        if (currentTrackID !== stored_track_id) return upDateToNewTrack(state);
 
-                fetch('./', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(state),
-                })
-                    .then((res) => res.json())
-                    .then((data) => {
-                        trackData = new songData(data);
-                        return trackData;
-                    })
-                    .then((trackData) => {
-                        neoDimension = getNeoDimension(trackData.bars);
-                    })
-                    .then((res) => timerControl(state['paused']));
-            } else {
-                trackPosition = state['position'];
-                elapsedTime = trackPosition;
-                if (trackData !== undefined) {
-                    timerControl(state['paused']);
-                }
-            }
+        trackPosition = state['position'];
+        elapsedTime = trackPosition;
+        if (trackData !== undefined) {
+            timerControl(state['paused']);
         }
     });
+
+    function upDateToNewTrack(state) {
+        trackPosition = 0;
+        stored_track_id = currentTrackID;
+        clearParagraph = true;
+
+        console.log('New track detected:', stored_track_id);
+        console.log('Track position', trackPosition);
+
+        fetch('./', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(state),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                trackData = new songData(data);
+                return trackData;
+            })
+            .then((trackData) => {
+                neoDimension = getNeoDimension(trackData.bars);
+            })
+            .then((res) => timerControl(state['paused']));
+    }
 
     var trackPositionQuery;
     function startTrackPositionQuery() {
         var trackPositionQueryRate = 1000;
+        console.log('Querying... ⏩');
 
         trackPositionQuery = setInterval(() => {
-            // console.log('Querying...');
             player.getCurrentState().then((state) => {
                 if (!state) {
                     // console.log('No music playing');
@@ -1725,6 +1704,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // startTrackPositionQuery()
 
     function stopTrackPositionQuery() {
+        console.log('Not querying 🛑');
         clearInterval(trackPositionQuery);
     }
     //add something to allow stop querying when we don't need to
