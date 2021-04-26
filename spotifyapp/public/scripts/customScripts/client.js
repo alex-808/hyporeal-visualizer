@@ -323,6 +323,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.neoLinePoints = neoLinePoints;
             sceneInfo.scene.add(neoLine);
 
+            let sceneBarCount = 0;
+            let sceneBeatCount = 0;
+            let sceneSegCount = 0;
+            let sceneSectionCount = 0;
+            let paragraphArray = [];
+            let maxWords = 250;
+
             sceneInfo.animation = function () {
                 if (storedNeoDimension !== neoDimension) {
                     storedNeoDimension = neoDimension;
@@ -383,16 +390,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }, 2000);
                 }
                 if (
-                    neoStoredSectionCounter !== sectionCounter &&
+                    sceneSectionCount !== sectionCounter &&
                     sectionCounter &&
                     trackData
                 ) {
                     // console.log('ran1')
                     neoToggle = true;
 
-                    neoStoredSectionCounter = sectionCounter;
+                    sceneSectionCount = sectionCounter;
 
-                    neoStoredBeatCounter = beatCounter;
+                    sceneBeatCount = beatCounter;
                 }
                 var planeGeometry = new THREE.PlaneBufferGeometry(
                     sceneInfo3.boxWidth,
@@ -407,11 +414,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 if (
                     trackData !== undefined &&
-                    squaresArray[neoStoredBarCounter] !== undefined
+                    squaresArray[sceneBarCount] !== undefined
                 ) {
                     if (
                         trackData.sectionNearestBarStart[
-                            neoStoredSectionCounter + 1
+                            sceneSectionCount + 1
                         ] === trackData.beatsStart[beatCounter + 1] &&
                         neoToggle === true
                     ) {
@@ -423,19 +430,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                             allowGlitchBars = 4;
                         }
 
-                        neoStoredBeatCounter = beatCounter;
+                        sceneBeatCount = beatCounter;
                     }
                 }
 
-                if (
-                    neoStoredBarCounter !== barCounter &&
-                    barCounter !== undefined
-                ) {
+                if (sceneBarCount !== barCounter && barCounter !== undefined) {
                     // allowGlitchReset = true
                     allowGlitchBars--;
                     maskingBars--;
-                    neoStoredBarCounter = barCounter;
-                    glitchDistort(sceneInfo4.plane);
+                    sceneBarCount = barCounter;
+                    distortModel(sceneInfo4.plane);
                     if (utils.getRandomInt(4) === 0) {
                         totalFader();
                     }
@@ -467,14 +471,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                             segColorIndex
                         );
                         plane.position.x =
-                            squaresArray[neoStoredBarCounter][0].x +
+                            squaresArray[sceneBarCount][0].x +
                             sceneInfo3.boxWidth / 2;
                         plane.position.y =
-                            squaresArray[neoStoredBarCounter][0].y -
+                            squaresArray[sceneBarCount][0].y -
                             sceneInfo3.boxWidth / 2;
                         plane.position.z =
-                            squaresArray[neoStoredBarCounter][0].z - 0.01;
-                        neoParagraphArray.push(plane);
+                            squaresArray[sceneBarCount][0].z - 0.01;
+                        paragraphArray.push(plane);
                         sceneInfo3.scene.add(plane);
                     }
 
@@ -484,16 +488,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                     boxDivisions = sceneInfo3.boxWidth / 7;
                     // console.log("neoLineAnim barCounter", barCounter)
-                    // console.log(neoStoredBarCounter)
+                    // console.log(sceneBarCount)
                     if (
-                        squaresArray[neoStoredBarCounter] !== undefined &&
-                        squaresArray[neoStoredBarCounter] !== undefined
+                        squaresArray[sceneBarCount] !== undefined &&
+                        squaresArray[sceneBarCount] !== undefined
                     ) {
                         sceneInfo3.pen.position.x =
-                            squaresArray[neoStoredBarCounter][0].x +
+                            squaresArray[sceneBarCount][0].x +
                             sceneInfo3.boxWidth / 2;
                         sceneInfo3.pen.position.y =
-                            squaresArray[neoStoredBarCounter][0].y -
+                            squaresArray[sceneBarCount][0].y -
                             sceneInfo3.boxWidth / 2;
                     }
 
@@ -503,39 +507,39 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
 
                     neoLineArray = [];
-                    if (neoParagraphArray.length > neoMaxWords) {
-                        // console.log(neoParagraphArray.length - neoMaxWords)
+                    if (paragraphArray.length > maxWords) {
+                        // console.log(paragraphArray.length - maxWords)
                         for (
                             var i = 0;
-                            (i = neoParagraphArray.length - neoMaxWords);
+                            (i = paragraphArray.length - maxWords);
                             i++
                         ) {
-                            sceneInfo3.scene.remove(neoParagraphArray[0]);
-                            neoParagraphArray.shift();
+                            sceneInfo3.scene.remove(paragraphArray[0]);
+                            paragraphArray.shift();
                             // console.log('removed extra')
                         }
                     }
                 }
 
-                if (neoStoredBeatCounter !== beatCounter && glitchTheBar > 0) {
+                if (sceneBeatCount !== beatCounter && glitchTheBar > 0) {
                     glitchTheBar--;
-                    glitchDistort(sceneInfo4.plane);
+                    distortModel(sceneInfo4.plane);
                 }
 
-                neoStoredBeatCounter = beatCounter;
+                sceneBeatCount = beatCounter;
 
                 if (
-                    neoStoredSegCounter !== segmentCounter &&
-                    squaresArray[neoStoredBarCounter] !== undefined &&
-                    squaresArray[neoStoredBarCounter] !== undefined
+                    sceneSegCount !== segmentCounter &&
+                    squaresArray[sceneBarCount] !== undefined &&
+                    squaresArray[sceneBarCount] !== undefined
                 ) {
-                    neoStoredSegCounter = segmentCounter;
+                    sceneSegCount = segmentCounter;
                     sceneInfo3.neoLinePoints.push(
                         new THREE.Vector2(
-                            squaresArray[neoStoredBarCounter][0].x +
+                            squaresArray[sceneBarCount][0].x +
                                 timbreSum1 * boxDivisions +
                                 sceneInfo3.boxWidth / 2,
-                            squaresArray[neoStoredBarCounter][0].y +
+                            squaresArray[sceneBarCount][0].y +
                                 (timbreSum2 * boxDivisions -
                                     sceneInfo3.boxWidth / 2)
                         )
@@ -552,7 +556,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         );
                         var line = new THREE.Line(geometry, material);
                         neoLineArray.push(line);
-                        neoParagraphArray.push(line);
+                        paragraphArray.push(line);
                         geometry.dispose();
                     } else {
                         //console.log("curve")
@@ -565,7 +569,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         );
                         var splineObject = new THREE.Line(geometry, material);
                         neoLineArray.push(splineObject);
-                        neoParagraphArray.push(splineObject);
+                        paragraphArray.push(splineObject);
                         geometry.dispose();
                     }
                     // need to ensure that these points are being cleaned up properly after every 3
@@ -579,13 +583,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     console.log('clearparagraph');
                     clearParagraph = false;
 
-                    for (var i = 0; i < neoParagraphArray.length; i++) {
+                    for (var i = 0; i < paragraphArray.length; i++) {
                         console.log('removed');
-                        sceneInfo3.scene.remove(neoParagraphArray[i]);
+                        sceneInfo3.scene.remove(paragraphArray[i]);
                     }
                     neoLineArray = [];
                     //sceneInfo3.neoLinePoints = []
-                    neoParagraphArray = [];
+                    paragraphArray = [];
                     if (utils.getRandomInt(2) === 0) {
                         faderInverted = !faderInverted;
                         console.log('faderInverted', faderInverted);
@@ -712,7 +716,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.animation = function () {
                 if (flickerToggle === true) {
                     sceneInfo4.sculpture.rotation.y += 0.01;
-                    flickerObject(sceneInfo4.plane);
+                    flickerModel(sceneInfo4.plane);
                 }
             };
             return sceneInfo;
@@ -831,18 +835,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        var neoStoredBarCounter = 0;
-        var neoStoredSegCounter = 0;
-        var neoStoredSectionCounter = 0;
-        var neoStoredBeatCounter = 0;
         var twoCounter = 0;
 
         var boxDivisions;
         var storedNeoDimension;
 
-        var neoLineArray = [];
-        var neoParagraphArray = [];
-        var neoMaxWords = 250;
         var squaresArray = [];
         var glitchTheBar = false;
         var allowGlitchBars = 0;
@@ -1024,13 +1021,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var vector = 0.1;
         var flickerRange = 0.1;
         var shift = 0.005;
-        var terminus = 1.4;
-        var flicker = true;
-        var flickerInterval = setInterval(function () {
-            //factor = -1.5
-        }, 1000);
 
-        function flickerObject(object) {
+        function flickerModel(object) {
             //need to prevent this from shifting over infinitely
 
             if (factor + flickerRange > 1.5) {
@@ -1064,7 +1056,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var distortCounter = 0;
         var allowGlitchReset = true;
 
-        function glitchDistort(object, direction) {
+        function distortModel(object, direction) {
             // console.log('distort', distortCounter)
             distortCounter++;
 
@@ -1116,7 +1108,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
             if (allowGlitchReset === true) {
                 setTimeout(function () {
-                    resetGlitchDistort(
+                    unDistortModel(
                         object,
                         direction,
                         grain,
@@ -1128,14 +1120,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
         var undistortCounter = 0;
-        function resetGlitchDistort(
-            object,
-            direction,
-            grain,
-            glitchPoint,
-            glitchRange,
-            glitchAmount
-        ) {
+        function unDistortModel(object) {
             // object.geometry = sceneInfo4.geometry
             // console.log('undistort', undistortCounter)
             undistortCounter++;
@@ -1144,11 +1129,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 object.geometry.vertices[i].x = object.originalGeometry[i].x;
                 object.geometry.vertices[i].y = object.originalGeometry[i].y;
                 object.geometry.vertices[i].z = object.originalGeometry[i].z;
-
-                //   if (object.geometry.vertices[i][grain] > glitchPoint - glitchRange && object.geometry.vertices[i][grain] < glitchPoint + glitchRange ) {
-
-                //     object.geometry.vertices[i][direction] -= glitchAmount
-                // }
             }
             object.geometry.verticesNeedUpdate = true;
             object.updateMatrix();
@@ -1156,24 +1136,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
         function bubbleDistort(object) {}
 
-        // setInterval(function() {
-        //   if(masking === true) {
-        //     masking = false
-        //   }
-        //   else {
-        //     masking = true
-        //   }
-        //   console.log(masking)
-        // }, 5000)
-
         const sceneInfo1 = setupScene1();
         const sceneInfo2 = setupScene2();
         const sceneInfo3 = setupScene3();
         const sceneInfo4 = setupScene4();
 
         var sceneInfoArray = [sceneInfo1, sceneInfo2, sceneInfo3, sceneInfo4];
-
-        console.log(sceneInfoArray[1]);
 
         function bigScreen(sceneInfo) {
             for (var i = 0; i < sceneInfoArray.length; i++) {
