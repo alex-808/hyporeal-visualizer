@@ -21,7 +21,6 @@ window.addEventListener('beforeunload', function (event) {
 });
 
 window.onSpotifyWebPlaybackSDKReady = () => {
-    var beatAnimation = 0;
     var planeBackRowAnimation = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var planeStoredBackRow = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var neoDimension;
@@ -29,11 +28,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var timbreSum1 = 0;
     var timbreSum2 = 0;
 
-    var checkForUndoAnalGlyphControl = false;
     var clearParagraph = true;
 
     function runVisuals() {
         const canvas = document.querySelector('#c');
+        var checkForUndoAnalGlyphControl = false;
 
         function setupScene1() {
             const sceneInfo = makeScene(document.querySelector('#pitchplane'));
@@ -70,7 +69,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 var columnVertices = 131;
 
                 if (planeStoredBackRow === planeBackRowAnimation) {
-                    //Decay effect &
+                    //Decay effect
                     for (var i = 0; i < sceneInfo1.planeDimension; i++) {
                         if (sceneInfo1.mesh.geometry.vertices[i].z > 0) {
                             if (flowToggle === true) {
@@ -142,11 +141,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             visuals.composer2.addPass(visuals.glitchPass);
             visuals.composer2.addPass(visuals.filmPass);
 
-            var goalLineMaterial = new MeshLineMaterial({
-                color: 'white',
-                lineWidth: 5,
-            });
-
             var goalLine1 = new MeshLine();
             goalLine1.setGeometry(goalLineArray1);
 
@@ -191,6 +185,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 movementRate: 5,
                 velocity: 0,
                 acceleration: 0,
+                beatMomentum: 0,
                 range: 30,
             };
 
@@ -210,7 +205,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.cameraViewProjectionMatrix = cameraViewProjectionMatrix;
 
             sceneInfo.animation = function () {
-                updateSceneFrustum(sceneInfo2);
+                utils.updateSceneFrustum(sceneInfo2);
 
                 //if pen leaves view
                 if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
@@ -242,7 +237,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                     sceneInfo2.beatLine.setVertices(beatLinePoints);
 
-                    updateScenePhysics(sceneInfo2.physics);
+                    utils.updateScenePhysics(sceneInfo2);
 
                     sceneInfo2.mesh.position.y += sceneInfo2.physics.velocity;
                     sceneInfo2.mesh.position.x +=
@@ -559,7 +554,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         paragraphArray.push(line);
                         geometry.dispose();
                     } else {
-                        //console.log("curve")
                         var curve = new THREE.SplineCurve(
                             sceneInfo3.neoLinePoints
                         );
@@ -575,7 +569,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     // need to ensure that these points are being cleaned up properly after every 3
                     sceneInfo3.neoLinePoints.shift();
                     sceneInfo3.neoLinePoints.shift();
-                    //console.log(sceneInfo3.neoLinePoints)
                     twoCounter = 0;
                 }
 
@@ -806,7 +799,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                             random = utils.getRandomInt(3);
                         }
                         var sceneIndex;
-                        console.log(random);
                         switch (random) {
                             case 0:
                                 sceneIndex = 0;
@@ -881,24 +873,23 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         // need to set it so if there is a skip in song, the timeouts are cleared
         function totalFilm() {
             var random = utils.getRandomInt(3);
-            // console.log("random", random)
             if (random === 0) {
                 if (trackData.beatsStart[beatCounter + 1]) {
+                    // short
                     totalFilmDuration =
                         trackData.beatsStart[beatCounter + 1] -
                         trackData.beatsStart[beatCounter];
                     visuals.dotScreenPass.enabled = true;
-                    // console.log("short", totalFilmDuration)
                 } else {
                     totalFilmDuration = 1000;
                     visuals.dotScreenPass.enabled = true;
                 }
             } else {
                 if (trackData.beatsStart[beatCounter + 8]) {
+                    // long
                     totalFilmDuration =
                         trackData.beatsStart[beatCounter + 8] -
                         trackData.beatsStart[beatCounter];
-                    // console.log("long", totalFilmDuration)
                     totalFader();
                 } else totalFilmDuration = 10000;
                 totalFader();
@@ -917,7 +908,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         function totalNone() {
             setAnalglyphEffect = 'none';
             effectType = 'film';
-            console.log('none');
         }
 
         var analglyphStoredBarCounter;
@@ -933,18 +923,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var faderInverted = false;
         faderColors.push(new THREE.Color('blue'));
         faderColors.push(new THREE.Color('white'));
-        // console.log(faderColors)
-
-        // console.log(white)
 
         function totalFader() {
-            // console.log(faderInverted)
             if (
                 sectionCounter > trackData.sections.length / 2 &&
                 utils.getRandomInt(3) === 0
             ) {
                 faderInverted = !faderInverted;
-                console.log('fader inverted', faderInverted);
             }
 
             if (faderInverted === true) {
@@ -962,7 +947,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
 
             if (fadingBool === false) {
-                // console.log('ran')
                 fadingBool = true;
 
                 analglyphStoredBarCounter = barCounter;
@@ -1004,14 +988,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 analglyphStoredBarCounter = barCounter;
             }
             if (barCounter === analglyphStoredBarCounter + numOfBars) {
-                // console.log('undone')
-                // console.log(faderInverted)
                 clearInterval(fadeInterval);
 
                 sceneInfo4.bufferScene.background = _.cloneDeep(
                     faderColors[faderColor1]
                 );
-                // console.log(faderColors)
                 checkForUndoAnalGlyphControl = false;
                 fadingBool = false;
             }
@@ -1047,84 +1028,50 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             object.geometry.verticesNeedUpdate = true;
         }
 
-        var glitchPoint = 0;
-        var glitchRange = 0.05;
-        var glitchAmount = 0.05;
-        var glitchStoredBarCounter;
-        var glitchStoredBeatCounter = beatCounter;
-        var directionArray = ['x', 'y', 'z'];
-        var distortCounter = 0;
         var allowGlitchReset = true;
 
-        function distortModel(object, direction) {
-            // console.log('distort', distortCounter)
-            distortCounter++;
+        function distortModel(object) {
+            var directionArray = ['x', 'y', 'z'];
+            var negative = utils.getRandomInt(2) === 0 ? -1 : 1;
+            var direction = directionArray[utils.getRandomInt(3)];
 
-            var negative;
-            if (utils.getRandomInt(2) === 0) {
-                negative = -1;
-            } else {
-                negative = 1;
-            }
-            direction = directionArray[utils.getRandomInt(3)];
-            glitchRange = (utils.getRandomInt(10) + 1) / 10;
+            var glitchRange = (utils.getRandomInt(10) + 1) / 10;
+            var glitchPoint = Math.random() * negative;
+            var glitchAmount = 0.05;
 
-            glitchPoint = Math.random() * negative;
-
-            var grain;
+            var grainDir;
             switch (direction) {
                 case (direction = 'x'):
-                    grain = 'y';
-                    glitchAmount = 0.05;
+                    grainDir = 'y';
                     break;
                 case (direction = 'y'):
-                    grain = 'x';
-                    glitchAmount = 0.05;
+                    grainDir = 'x';
                     break;
                 case (direction = 'z'):
-                    if (utils.getRandomInt(2) === 0) {
-                        grain = 'y';
-                    } else {
-                        grain = 'x';
-                    }
-
+                    grainDir = utils.getRandomInt(2) === 0 ? 'y' : 'x';
                     glitchAmount = 0.1;
                     break;
             }
-            // console.log('glitched')
-            glitchStoredBarCounter = barCounter;
+            let vertices = object.geometry.vertices;
 
             for (var i = 0; i < object.geometry.vertices.length; i++) {
                 if (
-                    object.geometry.vertices[i][grain] >
-                        glitchPoint - glitchRange &&
-                    object.geometry.vertices[i][grain] <
-                        glitchPoint + glitchRange
+                    vertices[i][grainDir] > glitchPoint - glitchRange &&
+                    vertices[i][grainDir] < glitchPoint + glitchRange
                 ) {
-                    object.geometry.vertices[i][direction] += glitchAmount;
+                    vertices[i][direction] += glitchAmount;
                 }
 
                 object.geometry.verticesNeedUpdate = true;
             }
             if (allowGlitchReset === true) {
                 setTimeout(function () {
-                    unDistortModel(
-                        object,
-                        direction,
-                        grain,
-                        glitchPoint,
-                        glitchRange,
-                        glitchAmount
-                    );
+                    unDistortModel(object);
                 }, 100);
             }
         }
-        var undistortCounter = 0;
-        function unDistortModel(object) {
-            // object.geometry = sceneInfo4.geometry
-            // console.log('undistort', undistortCounter)
-            undistortCounter++;
 
+        function unDistortModel(object) {
             for (var i = 0; i < object.geometry.vertices.length; i++) {
                 object.geometry.vertices[i].x = object.originalGeometry[i].x;
                 object.geometry.vertices[i].y = object.originalGeometry[i].y;
@@ -1171,7 +1118,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         function undoScreenChange() {
-            console.log('undid');
             for (var i = 0; i < sceneInfoArray.length; i++) {
                 sceneInfoArray[i].elem.style.width = '50%';
                 sceneInfoArray[i].elem.style.height = '50%';
@@ -1328,39 +1274,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        function updateScenePhysics(physics) {
-            physics.acceleration =
-                800 / (beatAnimation - sceneInfo2.mesh.position.y);
-
-            if (isFinite(physics.acceleration) !== true) {
-                physics.acceleration = 0;
-                physics.velocity *= 0.7;
-            } else if (
-                sceneInfo2.mesh.position.y > beatAnimation - physics.range &&
-                sceneInfo2.mesh.position.y < beatAnimation + physics.range
-            ) {
-                physics.acceleration = 0;
-                physics.velocity *= 0.7;
-            }
-
-            physics.velocity += physics.acceleration;
-        }
-
-        function updateSceneFrustum(sceneInfo) {
-            sceneInfo.camera.updateMatrixWorld();
-            sceneInfo.camera.matrixWorldInverse.getInverse(
-                sceneInfo.camera.matrixWorld
-            );
-
-            sceneInfo.cameraViewProjectionMatrix.multiplyMatrices(
-                sceneInfo.camera.projectionMatrix,
-                sceneInfo.camera.matrixWorldInverse
-            );
-            sceneInfo.frustum.setFromProjectionMatrix(
-                sceneInfo.cameraViewProjectionMatrix
-            );
-        }
-
         function render() {
             sceneInfo1.animation();
             sceneInfo2.animation();
@@ -1389,10 +1302,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             requestAnimationFrame(render);
         }
+
         requestAnimationFrame(render);
+        return sceneInfoArray;
     }
 
-    runVisuals();
+    const [sceneInfo1, sceneInfo2, sceneInfo3, sceneInfo4] = runVisuals();
 
     var trackPosition;
     var initialMilliseconds;
@@ -1467,11 +1382,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             trackData.beatsStart[beatCounter] - syncCompensation
         ) {
             //console.log("New beat")
-            if (beatAnimation === -100) {
+            if (sceneInfo2.physics.beatMomentum === -100) {
                 //console.log("Beat")
-                beatAnimation = 100;
+                sceneInfo2.physics.beatMomentum = 100;
             } else {
-                beatAnimation = -100;
+                sceneInfo2.physics.beatMomentum = -100;
                 //console.log("Boop")
             }
 
