@@ -28,8 +28,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var timbreSum1 = 0;
     var timbreSum2 = 0;
 
-    var clearParagraph = true;
-
     function runVisuals() {
         const canvas = document.querySelector('#c');
         var checkForUndoAnalGlyphControl = false;
@@ -70,42 +68,38 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 if (planeStoredBackRow === planeBackRowAnimation) {
                     //Decay effect
-                    for (var i = 0; i < sceneInfo1.planeDimension; i++) {
-                        if (sceneInfo1.mesh.geometry.vertices[i].z > 0) {
+                    for (var i = 0; i < sceneInfo.planeDimension; i++) {
+                        if (sceneInfo.mesh.geometry.vertices[i].z > 0) {
                             if (flowToggle === true) {
-                                sceneInfo1.mesh.geometry.vertices[
-                                    i
-                                ].z -= 0.0125;
+                                sceneInfo.mesh.geometry.vertices[i].z -= 0.0125;
                             } else {
-                                sceneInfo1.mesh.geometry.vertices[
-                                    i
-                                ].z += 0.0025;
+                                sceneInfo.mesh.geometry.vertices[i].z += 0.0025;
                             }
                         }
                     }
                 } else {
                     planeStoredBackRow = planeBackRowAnimation;
-                    for (var i = 0; i < sceneInfo1.planeDimension; i++) {
-                        sceneInfo1.mesh.geometry.vertices[i].z =
+                    for (var i = 0; i < sceneInfo.planeDimension; i++) {
+                        sceneInfo.mesh.geometry.vertices[i].z =
                             planeStoredBackRow[i];
                     }
                 }
 
-                sceneInfo1.mesh.geometry.verticesNeedUpdate = true;
+                sceneInfo.mesh.geometry.verticesNeedUpdate = true;
                 //Push backrow forward
                 for (
                     columnVertices;
                     columnVertices >= 11;
-                    columnVertices -= sceneInfo1.planeDimension
+                    columnVertices -= sceneInfo.planeDimension
                 ) {
                     for (
                         rowVertices;
                         rowVertices > columnVertices;
                         rowVertices--
                     ) {
-                        sceneInfo1.mesh.geometry.vertices[rowVertices].z =
-                            sceneInfo1.mesh.geometry.vertices[
-                                rowVertices - sceneInfo1.planeDimension
+                        sceneInfo.mesh.geometry.vertices[rowVertices].z =
+                            sceneInfo.mesh.geometry.vertices[
+                                rowVertices - sceneInfo.planeDimension
                             ].z;
                     }
                 }
@@ -122,7 +116,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.scene.remove(camera);
             sceneInfo.camera.position.z = 1000;
             var goalLineArray1 = new THREE.Geometry();
-            // var goalLineArray2 = [];
             var camera = new THREE.OrthographicCamera(
                 sceneInfo.elem.width / -2,
                 sceneInfo.elem.width / 2,
@@ -205,49 +198,48 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.cameraViewProjectionMatrix = cameraViewProjectionMatrix;
 
             sceneInfo.animation = function () {
-                utils.updateSceneFrustum(sceneInfo2);
+                utils.updateSceneFrustum(sceneInfo);
 
                 //if pen leaves view
-                if (!sceneInfo2.frustum.intersectsObject(sceneInfo2.mesh)) {
+                if (!sceneInfo.frustum.intersectsObject(sceneInfo.mesh)) {
                     // Reset pen position
-                    sceneInfo2.mesh.position.x =
-                        -sceneInfo2.mesh.position.x * 0.7;
+                    sceneInfo.mesh.position.x =
+                        -sceneInfo.mesh.position.x * 0.7;
 
                     beatLinePoints = [];
 
                     beatLinePoints.push(
                         new THREE.Vector3(
-                            sceneInfo2.mesh.position.x,
-                            sceneInfo2.mesh.position.y,
+                            sceneInfo.mesh.position.x,
+                            sceneInfo.mesh.position.y,
                             0
                         )
                     );
 
-                    sceneInfo2.beatLine.setVertices(beatLinePoints);
+                    sceneInfo.beatLine.setVertices(beatLinePoints);
                 }
                 //if pen is in view
                 else {
                     beatLinePoints.push(
                         new THREE.Vector3(
-                            sceneInfo2.mesh.position.x,
-                            sceneInfo2.mesh.position.y,
+                            sceneInfo.mesh.position.x,
+                            sceneInfo.mesh.position.y,
                             0
                         )
                     );
 
-                    sceneInfo2.beatLine.setVertices(beatLinePoints);
+                    sceneInfo.beatLine.setVertices(beatLinePoints);
 
-                    utils.updateScenePhysics(sceneInfo2);
+                    utils.updateScenePhysics(sceneInfo);
 
-                    sceneInfo2.mesh.position.y += sceneInfo2.physics.velocity;
-                    sceneInfo2.mesh.position.x +=
-                        sceneInfo2.physics.movementRate;
+                    sceneInfo.mesh.position.y += sceneInfo.physics.velocity;
+                    sceneInfo.mesh.position.x += sceneInfo.physics.movementRate;
                 }
                 if (
-                    sceneInfo2.mesh.position.y > 150 ||
-                    sceneInfo2.mesh.position.y < -150
+                    sceneInfo.mesh.position.y > 150 ||
+                    sceneInfo.mesh.position.y < -150
                 ) {
-                    sceneInfo2.mesh.position.y = sceneInfo2.mesh.position.y / 2;
+                    sceneInfo.mesh.position.y = sceneInfo.mesh.position.y / 2;
                 }
             };
 
@@ -325,54 +317,69 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             let paragraphArray = [];
             let maxWords = 250;
 
+            function resetParagraph() {
+                storedNeoDimension = neoDimension;
+                for (var i = 0; i < paragraphArray.length; i++) {
+                    sceneInfo.scene.remove(paragraphArray[i]);
+                }
+                neoLineArray = [];
+                paragraphArray = [];
+
+                if (utils.getRandomInt(2) === 0) {
+                    faderInverted = !faderInverted;
+                    console.log('faderInverted', faderInverted);
+                    if (trackData) {
+                        totalFader();
+                    }
+                }
+
+                checkForUndoAnalGlyphControl = true;
+                sceneInfo.scene.remove(sceneInfo.plane);
+                sceneInfo.planeGeometry = new THREE.PlaneGeometry(
+                    sceneInfo.planeWidth,
+                    sceneInfo.planeHeight,
+                    storedNeoDimension,
+                    storedNeoDimension
+                );
+                sceneInfo.plane = new THREE.Mesh(
+                    sceneInfo.planeGeometry,
+                    sceneInfo.planeMaterial
+                );
+
+                var q = 0;
+                var k = 0;
+                squaresArray = [];
+                for (var i = 0; i < neoDimension * neoDimension; i++) {
+                    squaresArray[i] = [];
+                    if (i % neoDimension === 0 && i > 0) {
+                        q++;
+                    }
+                    for (var j = 0; j < neoDimension; j++) {
+                        if (j < 2) {
+                            k = 0;
+                            squaresArray[i][j] =
+                                sceneInfo.plane.geometry.vertices[i + j + q];
+                        } else {
+                            k = neoDimension - 1;
+                            squaresArray[i][j] =
+                                sceneInfo.plane.geometry.vertices[
+                                    i + j + k + q
+                                ];
+                        }
+                    }
+                }
+                if (squaresArray.length === 0) {
+                    sceneInfo.boxWidth = 0;
+                } else {
+                    sceneInfo.boxWidth = Math.abs(
+                        squaresArray[0][0].x - squaresArray[0][1].x
+                    );
+                }
+            }
+
             sceneInfo.animation = function () {
                 if (storedNeoDimension !== neoDimension) {
-                    storedNeoDimension = neoDimension;
-                    sceneInfo3.scene.remove(sceneInfo3.plane);
-                    sceneInfo3.planeGeometry = new THREE.PlaneGeometry(
-                        sceneInfo3.planeWidth,
-                        sceneInfo3.planeHeight,
-                        storedNeoDimension,
-                        storedNeoDimension
-                    );
-                    sceneInfo3.plane = new THREE.Mesh(
-                        sceneInfo3.planeGeometry,
-                        sceneInfo3.planeMaterial
-                    );
-                    //sceneInfo3.scene.add(sceneInfo3.plane)
-
-                    var q = 0;
-                    var k = 0;
-                    squaresArray = [];
-                    for (var i = 0; i < neoDimension * neoDimension; i++) {
-                        squaresArray[i] = [];
-                        if (i % neoDimension === 0 && i > 0) {
-                            q++;
-                        }
-                        for (var j = 0; j < neoDimension; j++) {
-                            if (j < 2) {
-                                k = 0;
-                                squaresArray[i][j] =
-                                    sceneInfo3.plane.geometry.vertices[
-                                        i + j + q
-                                    ];
-                            } else {
-                                k = neoDimension - 1;
-                                squaresArray[i][j] =
-                                    sceneInfo3.plane.geometry.vertices[
-                                        i + j + k + q
-                                    ];
-                            }
-                        }
-                    }
-                    if (squaresArray.length === 0) {
-                        console.log('true');
-                        sceneInfo3.boxWidth = 0;
-                    } else {
-                        sceneInfo3.boxWidth = Math.abs(
-                            squaresArray[0][0].x - squaresArray[0][1].x
-                        );
-                    }
+                    resetParagraph();
                 }
 
                 if (allowGlitchBars < 1) {
@@ -397,8 +404,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     sceneBeatCount = beatCounter;
                 }
                 var planeGeometry = new THREE.PlaneBufferGeometry(
-                    sceneInfo3.boxWidth,
-                    sceneInfo3.boxWidth
+                    sceneInfo.boxWidth,
+                    sceneInfo.boxWidth
                 );
                 var planeMaterialBlue = new THREE.MeshBasicMaterial({
                     color: 'blue',
@@ -407,17 +414,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     color: 'red',
                 });
 
-                if (
-                    trackData !== undefined &&
-                    squaresArray[sceneBarCount] !== undefined
-                ) {
+                if (trackData && squaresArray[sceneBarCount]) {
                     if (
                         trackData.sectionNearestBarStart[
                             sceneSectionCount + 1
                         ] === trackData.beatsStart[beatCounter + 1] &&
                         neoToggle === true
                     ) {
-                        //
                         neoToggle = false;
                         if (utils.getRandomInt(2) === 0) {
                             console.log('glitch reset disabled');
@@ -442,14 +445,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     if (utils.getRandomInt(4) === 0) {
                         glitchTheBar = 4;
                     }
-
-                    if (masking === false) {
-                        // undoBigScreen()
-                    }
-                    console.log(
-                        trackData.barsStart[barCounter],
-                        trackData.sectionNearestBarStart[sectionCounter + 1]
-                    );
                     if (
                         trackData.sectionNearestBarStart[sectionCounter + 1] ===
                             trackData.barsStart[barCounter] &&
@@ -467,37 +462,35 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         );
                         plane.position.x =
                             squaresArray[sceneBarCount][0].x +
-                            sceneInfo3.boxWidth / 2;
+                            sceneInfo.boxWidth / 2;
                         plane.position.y =
                             squaresArray[sceneBarCount][0].y -
-                            sceneInfo3.boxWidth / 2;
+                            sceneInfo.boxWidth / 2;
                         plane.position.z =
                             squaresArray[sceneBarCount][0].z - 0.01;
                         paragraphArray.push(plane);
-                        sceneInfo3.scene.add(plane);
+                        sceneInfo.scene.add(plane);
                     }
 
-                    // bigScreen(sceneInfoArray[getRandomInt(4)])
+                    sceneInfo.neoLinePoints = [];
 
-                    sceneInfo3.neoLinePoints = [];
-
-                    boxDivisions = sceneInfo3.boxWidth / 7;
+                    boxDivisions = sceneInfo.boxWidth / 7;
                     // console.log("neoLineAnim barCounter", barCounter)
                     // console.log(sceneBarCount)
                     if (
                         squaresArray[sceneBarCount] !== undefined &&
                         squaresArray[sceneBarCount] !== undefined
                     ) {
-                        sceneInfo3.pen.position.x =
+                        sceneInfo.pen.position.x =
                             squaresArray[sceneBarCount][0].x +
-                            sceneInfo3.boxWidth / 2;
-                        sceneInfo3.pen.position.y =
+                            sceneInfo.boxWidth / 2;
+                        sceneInfo.pen.position.y =
                             squaresArray[sceneBarCount][0].y -
-                            sceneInfo3.boxWidth / 2;
+                            sceneInfo.boxWidth / 2;
                     }
 
                     for (var i = 0; i < neoLineArray.length; i++) {
-                        sceneInfo3.scene.add(neoLineArray[i]);
+                        sceneInfo.scene.add(neoLineArray[i]);
                         //delete neoLineArray[i]
                     }
 
@@ -509,9 +502,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                             (i = paragraphArray.length - maxWords);
                             i++
                         ) {
-                            sceneInfo3.scene.remove(paragraphArray[0]);
+                            sceneInfo.scene.remove(paragraphArray[0]);
                             paragraphArray.shift();
-                            // console.log('removed extra')
                         }
                     }
                 }
@@ -529,33 +521,37 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     squaresArray[sceneBarCount] !== undefined
                 ) {
                     sceneSegCount = segmentCounter;
-                    sceneInfo3.neoLinePoints.push(
+                    sceneInfo.neoLinePoints.push(
                         new THREE.Vector2(
                             squaresArray[sceneBarCount][0].x +
                                 timbreSum1 * boxDivisions +
-                                sceneInfo3.boxWidth / 2,
+                                sceneInfo.boxWidth / 2,
                             squaresArray[sceneBarCount][0].y +
                                 (timbreSum2 * boxDivisions -
-                                    sceneInfo3.boxWidth / 2)
+                                    sceneInfo.boxWidth / 2)
                         )
                     );
 
                     twoCounter++;
                 }
-                var material = new THREE.LineBasicMaterial({ color: 'white' });
                 if (twoCounter === 3) {
                     if (timbreSum1 % 2 === 0) {
                         //console.log("line")
                         var geometry = new THREE.BufferGeometry().setFromPoints(
-                            sceneInfo3.neoLinePoints
+                            sceneInfo.neoLinePoints
                         );
+                        var material = new THREE.LineBasicMaterial({
+                            color: 'white',
+                        });
+
                         var line = new THREE.Line(geometry, material);
+
                         neoLineArray.push(line);
                         paragraphArray.push(line);
                         geometry.dispose();
                     } else {
                         var curve = new THREE.SplineCurve(
-                            sceneInfo3.neoLinePoints
+                            sceneInfo.neoLinePoints
                         );
                         var points = curve.getPoints(50);
                         var geometry = new THREE.BufferGeometry().setFromPoints(
@@ -567,37 +563,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         geometry.dispose();
                     }
                     // need to ensure that these points are being cleaned up properly after every 3
-                    sceneInfo3.neoLinePoints.shift();
-                    sceneInfo3.neoLinePoints.shift();
+                    sceneInfo.neoLinePoints.shift();
+                    sceneInfo.neoLinePoints.shift();
                     twoCounter = 0;
-                }
-
-                if (clearParagraph === true) {
-                    console.log('clearparagraph');
-                    clearParagraph = false;
-
-                    for (var i = 0; i < paragraphArray.length; i++) {
-                        console.log('removed');
-                        sceneInfo3.scene.remove(paragraphArray[i]);
-                    }
-                    neoLineArray = [];
-                    //sceneInfo3.neoLinePoints = []
-                    paragraphArray = [];
-                    if (utils.getRandomInt(2) === 0) {
-                        faderInverted = !faderInverted;
-                        console.log('faderInverted', faderInverted);
-                        if (trackData) {
-                            totalFader();
-                        }
-                    }
-                    checkForUndoAnalGlyphControl = true;
                 }
             };
 
             return sceneInfo;
         }
-
-        var flickerToggle = false;
 
         function setupScene4() {
             const sceneInfo = makeScene(
@@ -701,15 +674,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 sceneInfo.sculpture = sculpture;
                 sceneInfo.bufferScene.add(sculpture);
-                flickerToggle = true;
 
                 // console.log(object)
             });
 
             sceneInfo.animation = function () {
-                if (flickerToggle === true) {
-                    sceneInfo4.sculpture.rotation.y += 0.01;
-                    flickerModel(sceneInfo4.plane);
+                if (sculpture) {
+                    sceneInfo.sculpture.rotation.y += 0.01;
+                    flickerModel(sceneInfo.plane);
                 }
             };
             return sceneInfo;
@@ -822,7 +794,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     } else {
                         getSectionEffect(10);
                     }
-
                     break;
             }
         }
@@ -1568,8 +1539,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     function upDateToNewTrack(state) {
         trackPosition = 0;
         stored_track_id = currentTrackID;
-        clearParagraph = true;
-
         console.log('New track detected:', stored_track_id);
         console.log('Track position', trackPosition);
 
