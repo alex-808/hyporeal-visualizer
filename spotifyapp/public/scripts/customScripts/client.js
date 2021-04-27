@@ -23,14 +23,12 @@ window.addEventListener('beforeunload', function (event) {
 window.onSpotifyWebPlaybackSDKReady = () => {
     var planeBackRowAnimation = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     var planeStoredBackRow = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    var neoDimension;
 
     var timbreSum1 = 0;
     var timbreSum2 = 0;
 
     function runVisuals() {
         const canvas = document.querySelector('#c');
-        var checkForUndoAnalGlyphControl = false;
 
         function setupScene1() {
             const sceneInfo = makeScene(document.querySelector('#pitchplane'));
@@ -316,9 +314,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             let sceneSectionCount = 0;
             let paragraphArray = [];
             let maxWords = 250;
+            let squaresArray = [];
 
-            function resetParagraph() {
-                storedNeoDimension = neoDimension;
+            sceneInfo.paraGraphDimensions = null;
+
+            sceneInfo.resetParagraph = function (newDimension) {
                 for (var i = 0; i < paragraphArray.length; i++) {
                     sceneInfo.scene.remove(paragraphArray[i]);
                 }
@@ -333,13 +333,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
                 }
 
-                checkForUndoAnalGlyphControl = true;
+                effects.checkForUndoFader = true;
                 sceneInfo.scene.remove(sceneInfo.plane);
                 sceneInfo.planeGeometry = new THREE.PlaneGeometry(
                     sceneInfo.planeWidth,
                     sceneInfo.planeHeight,
-                    storedNeoDimension,
-                    storedNeoDimension
+                    newDimension,
+                    newDimension
                 );
                 sceneInfo.plane = new THREE.Mesh(
                     sceneInfo.planeGeometry,
@@ -349,18 +349,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 var q = 0;
                 var k = 0;
                 squaresArray = [];
-                for (var i = 0; i < neoDimension * neoDimension; i++) {
+                for (var i = 0; i < newDimension * newDimension; i++) {
                     squaresArray[i] = [];
-                    if (i % neoDimension === 0 && i > 0) {
+                    if (i % newDimension === 0 && i > 0) {
                         q++;
                     }
-                    for (var j = 0; j < neoDimension; j++) {
+                    for (var j = 0; j < newDimension; j++) {
                         if (j < 2) {
                             k = 0;
                             squaresArray[i][j] =
                                 sceneInfo.plane.geometry.vertices[i + j + q];
                         } else {
-                            k = neoDimension - 1;
+                            k = newDimension - 1;
                             squaresArray[i][j] =
                                 sceneInfo.plane.geometry.vertices[
                                     i + j + k + q
@@ -375,20 +375,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         squaresArray[0][0].x - squaresArray[0][1].x
                     );
                 }
-            }
+            };
 
             sceneInfo.animation = function () {
                 if (!trackData || !squaresArray) return;
 
-                if (storedNeoDimension !== neoDimension) {
-                    resetParagraph();
+                if (effects.allowGlitchBars < 1) {
+                    effects.allowGlitchReset = true;
                 }
-
-                if (allowGlitchBars < 1) {
-                    allowGlitchReset = true;
-                }
-                if (maskingBars < 1 && masking === true) {
-                    masking = false;
+                if (effects.maskingBars < 1 && effects.masking === true) {
+                    effects.masking = false;
                     setTimeout(function () {
                         undoScreenChange();
                     }, 2000);
@@ -422,8 +418,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         neoToggle = false;
                         if (utils.getRandomInt(2) === 0) {
                             console.log('glitch reset disabled');
-                            allowGlitchReset = false;
-                            allowGlitchBars = 4;
+                            effects.allowGlitchReset = false;
+                            effects.allowGlitchBars = 4;
                         }
 
                         sceneBeatCount = beatCounter;
@@ -431,9 +427,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }
 
                 if (sceneBarCount !== barCounter) {
-                    // allowGlitchReset = true
-                    allowGlitchBars--;
-                    maskingBars--;
+                    // effects.allowGlitchReset = true
+                    effects.allowGlitchBars--;
+                    effects.maskingBars--;
                     sceneBarCount = barCounter;
                     distortModel(sceneInfo4.plane);
                     if (utils.getRandomInt(4) === 0) {
@@ -441,7 +437,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
 
                     if (utils.getRandomInt(4) === 0) {
-                        glitchTheBar = 4;
+                        effects.glitchTheBar = 4;
                     }
                     if (
                         trackData.sectionNearestBarStart[sectionCounter + 1] ===
@@ -470,10 +466,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
 
                     sceneInfo.neoLinePoints = [];
-
                     boxDivisions = sceneInfo.boxWidth / 7;
-                    // console.log("neoLineAnim barCounter", barCounter)
-                    // console.log(sceneBarCount)
                     if (
                         squaresArray[sceneBarCount] &&
                         squaresArray[sceneBarCount]
@@ -505,8 +498,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
                 }
 
-                if (sceneBeatCount !== beatCounter && glitchTheBar > 0) {
-                    glitchTheBar--;
+                if (
+                    sceneBeatCount !== beatCounter &&
+                    effects.glitchTheBar > 0
+                ) {
+                    effects.glitchTheBar--;
                     distortModel(sceneInfo4.plane);
                 }
 
@@ -682,8 +678,22 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             };
             return sceneInfo;
         }
-        var previous;
-        var previousBigScreen;
+
+        const effects = {
+            previous: null,
+            previousBigScreen: null,
+            setAnalglyphEffect: 'analglyph',
+            masking: true,
+            maskingBars: 0,
+            allowGlitchReset: true,
+            allowGlitchBars: 0,
+            storedEffect: null,
+            effectType: 'film',
+            checkForUndoFader: false,
+            glitchTheBar: false,
+        };
+
+        function handleEffects() {}
 
         //add more variety for section changes
         function getSectionEffect(maxRandom) {
@@ -691,13 +701,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             switch (random) {
                 case 0:
                 case 1:
-                    if (previous !== 'glitch') {
+                    if (effects.previous !== 'glitch') {
                         console.log('glitch');
                         totalGlitch();
                         if (utils.getRandomInt(2) === 0) {
                             totalFader();
                         }
-                        previous = 'glitch';
+                        effects.previous = 'glitch';
                     } else {
                         getSectionEffect(10);
                     }
@@ -707,10 +717,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 case 2:
                 case 3:
                 case 4:
-                    if (previous !== 'film') {
+                    if (effects.previous !== 'film') {
                         console.log('film');
                         totalFilm();
-                        previous = 'film';
+                        effects.previous = 'film';
                     } else {
                         getSectionEffect(10);
                     }
@@ -721,7 +731,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 case 6:
                     console.log('pivot');
 
-                    if (setAnalglyphEffect !== 'none') {
+                    if (effects.setAnalglyphEffect !== 'none') {
                         console.log('none and maybe fader');
                         totalNone();
                         totalGlitch();
@@ -730,18 +740,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         }
                     } else {
                         console.log('analglyph');
-                        setAnalglyphEffect = 'analglyph';
+                        effects.setAnalglyphEffect = 'analglyph';
                         totalFader();
                     }
-                    previous = 'pivot';
+                    effects.previous = 'pivot';
                     break;
 
                 case 7:
-                    if (previous !== 'masking') {
+                    if (effects.previous !== 'masking') {
                         console.log('masking');
-                        masking = true;
-                        maskingBars = 2;
-                        previous = 'masking';
+                        effects.masking = true;
+                        effects.maskingBars = 2;
+                        effects.previous = 'masking';
                     } else {
                         getSectionEffect(10);
                     }
@@ -750,11 +760,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 case 8:
                 case 9:
-                    if (previous !== 'bigScreen') {
+                    if (effects.previous !== 'bigScreen') {
                         console.log('bigScreen');
                         var bigScreenInterval;
-                        allowGlitchReset = false;
-                        allowGlitchBars = 4;
+                        effects.allowGlitchReset = false;
+                        effects.allowGlitchBars = 4;
                         if (trackData.barsStart[barCounter + 4]) {
                             bigScreenInterval =
                                 trackData.barsStart[barCounter + 4] -
@@ -763,22 +773,22 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                             bigScreenInterval = 5000;
                         }
                         var random = utils.getRandomInt(3);
-                        if (random === previousBigScreen) {
+                        if (random === effects.previousBigScreen) {
                             random = utils.getRandomInt(3);
                         }
                         var sceneIndex;
                         switch (random) {
                             case 0:
                                 sceneIndex = 0;
-                                previousBigScreen = 0;
+                                effects.previousBigScreen = 0;
                                 break;
                             case 1:
                                 sceneIndex = 1;
-                                previousBigScreen = 1;
+                                effects.previousBigScreen = 1;
                                 break;
                             case 2:
                                 sceneIndex = 3;
-                                previousBigScreen = 3;
+                                effects.previousBigScreen = 3;
                                 break;
                         }
                         bigScreen(sceneInfoArray[sceneIndex]);
@@ -797,12 +807,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         var twoCounter = 0;
 
         var boxDivisions;
-        var storedNeoDimension;
 
-        var squaresArray = [];
-        var glitchTheBar = false;
-        var allowGlitchBars = 0;
-        var maskingBars = 0;
         var neoToggle = true;
 
         setInterval(function () {
@@ -810,36 +815,36 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }, 50);
         var flowToggle = true;
 
-        var storedEffect;
         function totalGlitch() {
             var random = utils.getRandomInt(2);
             splitScreen(sceneInfoArray[0], sceneInfoArray[1]);
             console.log('glitched');
-            storedEffect = setAnalglyphEffect;
-            if (storedEffect === 'effect') {
+            effects.storedEffect = effects.setAnalglyphEffect;
+            if (effects.storedEffect === 'effect') {
                 if (random === 0) {
-                    storedEffect = 'analglyph';
+                    effects.storedEffect = 'analglyph';
                 } else {
-                    storedEffect = 'none';
+                    effects.storedEffect = 'none';
                 }
             }
-            console.log('storedEffect', storedEffect);
+            console.log('effects.storedEffect', effects.storedEffect);
             sceneInfo2.beatLineMaterial.lineWidth = 20;
-            setAnalglyphEffect = 'effect';
-            effectType = 'glitch';
+            effects.setAnalglyphEffect = 'effect';
+            effects.effectType = 'glitch';
 
             setTimeout(function () {
-                setAnalglyphEffect = storedEffect;
+                effects.setAnalglyphEffect = effects.storedEffect;
                 visuals.glitchPass.enabled = false;
                 sceneInfo2.beatLineMaterial.lineWidth = 1.8;
                 undoScreenChange();
             }, 100);
         }
 
-        var totalFilmDuration = 10000;
         // need to set it so if there is a skip in song, the timeouts are cleared
         function totalFilm() {
             var random = utils.getRandomInt(3);
+            var totalFilmDuration = 10000;
+
             if (random === 0) {
                 if (trackData.beatsStart[beatCounter + 1]) {
                     // short
@@ -862,19 +867,19 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 totalFader();
             }
 
-            setAnalglyphEffect = 'effect';
-            effectType = 'film';
+            effects.setAnalglyphEffect = 'effect';
+            effects.effectType = 'film';
 
             setTimeout(function () {
-                setAnalglyphEffect = 'analglyph';
+                effects.setAnalglyphEffect = 'analglyph';
                 visuals.filmPass.enabled = false;
                 visuals.dotScreenPass.enabled = false;
             }, totalFilmDuration);
         }
 
         function totalNone() {
-            setAnalglyphEffect = 'none';
-            effectType = 'film';
+            effects.setAnalglyphEffect = 'none';
+            effects.effectType = 'film';
         }
 
         var analglyphStoredBarCounter;
@@ -922,7 +927,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         faderColors[faderColor2]
                     );
                     analglyphBarLength = 2;
-                    checkForUndoAnalGlyphControl = true;
+                    effects.checkForUndoFader = true;
                 } else {
                     if (faderInverted === true) {
                         sceneInfo4.bufferScene.background = _.cloneDeep(
@@ -937,7 +942,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         analglyphFadeLength;
                     analglyphBarLength = 4;
 
-                    checkForUndoAnalGlyphControl = true;
+                    effects.checkForUndoFader = true;
                     fadeInterval = setInterval(function () {
                         if (
                             sceneInfo4.bufferScene.background.r > 0 ||
@@ -960,7 +965,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 sceneInfo4.bufferScene.background = _.cloneDeep(
                     faderColors[faderColor1]
                 );
-                checkForUndoAnalGlyphControl = false;
+                effects.checkForUndoFader = false;
                 fadingBool = false;
             }
         }
@@ -994,8 +999,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             object.geometry.verticesNeedUpdate = true;
         }
-
-        var allowGlitchReset = true;
 
         function distortModel(object) {
             var directionArray = ['x', 'y', 'z'];
@@ -1031,7 +1034,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 object.geometry.verticesNeedUpdate = true;
             }
-            if (allowGlitchReset === true) {
+            if (effects.allowGlitchReset === true) {
                 setTimeout(function () {
                     unDistortModel(object);
                 }, 100);
@@ -1106,11 +1109,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             return needResize;
         }
 
-        var setAnalglyphEffect = 'analglyph';
-        var effectType = 'film';
-        var masking = true;
         function renderSceneInfo(sceneInfo) {
-            if (masking === true && sceneInfo === sceneInfo4) {
+            if (effects.masking === true && sceneInfo === sceneInfo4) {
                 bigScreen(sceneInfo4);
                 resizeRendererToDisplaySize(visuals.renderer2);
             }
@@ -1151,7 +1151,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             );
 
             if (sceneInfo === sceneInfo4) {
-                if (masking === false) {
+                if (effects.masking === false) {
                     visuals.renderer2.setScissor(
                         left,
                         positiveYUpBottom,
@@ -1199,7 +1199,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }
             } else {
                 // rest of scene render
-                switch (setAnalglyphEffect) {
+                switch (effects.setAnalglyphEffect) {
                     case 'none':
                         visuals.renderer.render(scene, camera);
                         break;
@@ -1208,7 +1208,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         break;
 
                     case 'effect':
-                        switch (effectType) {
+                        switch (effects.effectType) {
                             case 'glitch':
                                 visuals.glitchPass.enabled = true;
                                 break;
@@ -1223,16 +1223,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                                 break;
 
                             case sceneInfo2:
-                                if (effectType !== 'film') {
+                                if (effects.effectType !== 'film') {
                                     visuals.composer2.render(scene, camera);
-                                } else if (effectType === 'glitch') {
+                                } else if (effects.effectType === 'glitch') {
                                     visuals.composer1.render(scene, camera);
                                 }
 
                                 break;
 
                             case sceneInfo3:
-                                if (effectType !== 'film') {
+                                if (effects.effectType !== 'film') {
                                     visuals.composer3.render(scene, camera);
                                 }
                                 break;
@@ -1246,7 +1246,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo2.animation();
             sceneInfo3.animation();
 
-            if (checkForUndoAnalGlyphControl === true) {
+            if (effects.checkForUndoFader === true) {
                 undoFader(analglyphBarLength);
             }
 
@@ -1259,7 +1259,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             visuals.renderer.clear(true, true);
             visuals.renderer.setScissorTest(true);
 
-            if (!masking) {
+            if (!effects.masking) {
                 renderSceneInfo(sceneInfo1);
                 renderSceneInfo(sceneInfo2);
                 renderSceneInfo(sceneInfo3);
@@ -1367,22 +1367,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 syncCompensation
         ) {
             sectionCounter++;
-            //  console.log("Check for hits New section")
         }
         if (
             elapsedTime + elapsedMilliseconds >=
             trackData.barsStart[barCounter] - syncCompensation
         ) {
             barCounter++;
-
-            //console.log("check for hits barCounter", barCounter)
         }
         if (
             elapsedTime + elapsedMilliseconds >=
             trackData.tatumsStart[tatumCounter] - syncCompensation
         ) {
             tatumCounter++;
-            //console.log("New tatum")
         }
 
         if (
@@ -1426,8 +1422,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             timbreSum1 = Math.ceil(timbreSum1 * 0.4);
             timbreSum2 = Math.ceil(timbreSum2 * 0.4);
-            //  console.log("timbreSum1", timbreSum1)
-            //    console.log("timberSum2", timbreSum2)
 
             segmentCounter++;
         }
@@ -1459,11 +1453,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     function startBetweenQueryTimer() {
         stopBetweenQueryTimer();
 
-        //console.log("Start timer elapsed time", elapsedTime)
         elapsedMilliseconds = 0;
         initialDate = new Date();
         initialMilliseconds = initialDate.getTime();
-        //console.log("Start timer")
 
         timerID = setInterval(() => {
             elapsedDate = new Date();
@@ -1551,7 +1543,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 return trackData;
             })
             .then((trackData) => {
-                neoDimension = getNeoDimension(trackData.bars);
+                let newDimension = getNeoDimension(trackData.bars);
+                sceneInfo3.resetParagraph(newDimension);
             })
             .then((res) => timerControl(state['paused']));
     }
