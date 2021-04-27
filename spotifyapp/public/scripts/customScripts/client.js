@@ -378,6 +378,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
 
             sceneInfo.animation = function () {
+                if (!trackData || !squaresArray) return;
+
                 if (storedNeoDimension !== neoDimension) {
                     resetParagraph();
                 }
@@ -391,12 +393,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         undoScreenChange();
                     }, 2000);
                 }
-                if (
-                    sceneSectionCount !== sectionCounter &&
-                    sectionCounter &&
-                    trackData
-                ) {
-                    // console.log('ran1')
+                if (sceneSectionCount !== sectionCounter) {
+                    console.log(sceneSectionCount, sectionCounter);
                     neoToggle = true;
 
                     sceneSectionCount = sectionCounter;
@@ -414,7 +412,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     color: 'red',
                 });
 
-                if (trackData && squaresArray[sceneBarCount]) {
+                if (squaresArray[sceneBarCount]) {
                     if (
                         trackData.sectionNearestBarStart[
                             sceneSectionCount + 1
@@ -432,7 +430,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
                 }
 
-                if (sceneBarCount !== barCounter && barCounter !== undefined) {
+                if (sceneBarCount !== barCounter) {
                     // allowGlitchReset = true
                     allowGlitchBars--;
                     maskingBars--;
@@ -447,8 +445,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
                     if (
                         trackData.sectionNearestBarStart[sectionCounter + 1] ===
-                            trackData.barsStart[barCounter] &&
-                        trackData.barsStart[barCounter] !== undefined
+                        trackData.barsStart[barCounter]
                     ) {
                         getSectionEffect(10);
                         var segColorIndex =
@@ -478,8 +475,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     // console.log("neoLineAnim barCounter", barCounter)
                     // console.log(sceneBarCount)
                     if (
-                        squaresArray[sceneBarCount] !== undefined &&
-                        squaresArray[sceneBarCount] !== undefined
+                        squaresArray[sceneBarCount] &&
+                        squaresArray[sceneBarCount]
                     ) {
                         sceneInfo.pen.position.x =
                             squaresArray[sceneBarCount][0].x +
@@ -517,8 +514,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 if (
                     sceneSegCount !== segmentCounter &&
-                    squaresArray[sceneBarCount] !== undefined &&
-                    squaresArray[sceneBarCount] !== undefined
+                    squaresArray[sceneBarCount]
                 ) {
                     sceneSegCount = segmentCounter;
                     sceneInfo.neoLinePoints.push(
@@ -1330,6 +1326,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
             i++;
         }
+        return divisionNameStart.length;
     }
 
     function updateDivisionCounters() {
@@ -1517,7 +1514,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     // Playback status updates
     player.addListener('player_state_changed', (state) => {
-        console.log(state);
         if (!state) {
             stopBetweenQueryTimer();
             stopTrackPositionQuery();
@@ -1563,7 +1559,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var trackPositionQuery;
     function startTrackPositionQuery() {
         var trackPositionQueryRate = 1000;
-        console.log('Querying... ⏩');
+        // console.log('Querying... ⏩');
 
         trackPositionQuery = setInterval(() => {
             player.getCurrentState().then((state) => {
