@@ -318,6 +318,43 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             sceneInfo.paraGraphDimensions = null;
 
+            function addSectionPlane() {
+                var planeMaterialBlue = new THREE.MeshBasicMaterial({
+                    color: 'blue',
+                });
+                var planeMaterialRed = new THREE.MeshBasicMaterial({
+                    color: 'red',
+                });
+                var segColorIndex =
+                    timbreSum1 % 2 === 0 ? planeMaterialRed : planeMaterialBlue;
+                var planeGeometry = new THREE.PlaneBufferGeometry(
+                    sceneInfo.boxWidth,
+                    sceneInfo.boxWidth
+                );
+                var plane = new THREE.Mesh(planeGeometry, segColorIndex);
+                plane.position.x =
+                    squaresArray[sceneBarCount][0].x + sceneInfo.boxWidth / 2;
+                plane.position.y =
+                    squaresArray[sceneBarCount][0].y - sceneInfo.boxWidth / 2;
+                plane.position.z = squaresArray[sceneBarCount][0].z - 0.01;
+                paragraphArray.push(plane);
+                sceneInfo.scene.add(plane);
+                var segColorIndex =
+                    timbreSum1 % 2 === 0 ? planeMaterialRed : planeMaterialBlue;
+                var planeGeometry = new THREE.PlaneBufferGeometry(
+                    sceneInfo.boxWidth,
+                    sceneInfo.boxWidth
+                );
+                var plane = new THREE.Mesh(planeGeometry, segColorIndex);
+                plane.position.x =
+                    squaresArray[sceneBarCount][0].x + sceneInfo.boxWidth / 2;
+                plane.position.y =
+                    squaresArray[sceneBarCount][0].y - sceneInfo.boxWidth / 2;
+                plane.position.z = squaresArray[sceneBarCount][0].z - 0.01;
+                paragraphArray.push(plane);
+                sceneInfo.scene.add(plane);
+            }
+
             sceneInfo.resetParagraph = function (newDimension) {
                 for (var i = 0; i < paragraphArray.length; i++) {
                     sceneInfo.scene.remove(paragraphArray[i]);
@@ -380,15 +417,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo.animation = function () {
                 if (!trackData || !squaresArray) return;
 
-                if (effects.allowGlitchBars < 1) {
-                    effects.allowGlitchReset = true;
-                }
-                if (effects.maskingBars < 1 && effects.masking === true) {
-                    effects.masking = false;
-                    setTimeout(function () {
-                        undoScreenChange();
-                    }, 2000);
-                }
                 if (sceneSectionCount !== sectionCounter) {
                     console.log(sceneSectionCount, sectionCounter);
                     neoToggle = true;
@@ -397,16 +425,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                     sceneBeatCount = beatCounter;
                 }
-                var planeGeometry = new THREE.PlaneBufferGeometry(
-                    sceneInfo.boxWidth,
-                    sceneInfo.boxWidth
-                );
-                var planeMaterialBlue = new THREE.MeshBasicMaterial({
-                    color: 'blue',
-                });
-                var planeMaterialRed = new THREE.MeshBasicMaterial({
-                    color: 'red',
-                });
 
                 if (squaresArray[sceneBarCount]) {
                     if (
@@ -418,8 +436,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         neoToggle = false;
                         if (utils.getRandomInt(2) === 0) {
                             console.log('glitch reset disabled');
-                            effects.allowGlitchReset = false;
-                            effects.allowGlitchBars = 4;
+                            effects.canUndistortModel = false;
+                            effects.distortModelBars = 4;
                         }
 
                         sceneBeatCount = beatCounter;
@@ -428,7 +446,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 if (sceneBarCount !== barCounter) {
                     // effects.allowGlitchReset = true
-                    effects.allowGlitchBars--;
+                    effects.distortModelBars--;
                     effects.maskingBars--;
                     sceneBarCount = barCounter;
                     distortModel(sceneInfo4.plane);
@@ -444,25 +462,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         trackData.barsStart[barCounter]
                     ) {
                         getSectionEffect(10);
-                        var segColorIndex =
-                            timbreSum1 % 2 === 0
-                                ? planeMaterialRed
-                                : planeMaterialBlue;
-
-                        var plane = new THREE.Mesh(
-                            planeGeometry,
-                            segColorIndex
-                        );
-                        plane.position.x =
-                            squaresArray[sceneBarCount][0].x +
-                            sceneInfo.boxWidth / 2;
-                        plane.position.y =
-                            squaresArray[sceneBarCount][0].y -
-                            sceneInfo.boxWidth / 2;
-                        plane.position.z =
-                            squaresArray[sceneBarCount][0].z - 0.01;
-                        paragraphArray.push(plane);
-                        sceneInfo.scene.add(plane);
+                        addSectionPlane();
                     }
 
                     sceneInfo.neoLinePoints = [];
@@ -682,36 +682,43 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         const effects = {
             previous: null,
             previousBigScreen: null,
-            setAnalglyphEffect: 'analglyph',
+            renderMode: 'analglyph',
             masking: true,
             maskingBars: 0,
-            allowGlitchReset: true,
-            allowGlitchBars: 0,
+            canUndistortModel: true,
+            distortModelBars: 0,
             storedEffect: null,
             effectType: 'film',
             checkForUndoFader: false,
             glitchTheBar: false,
         };
 
-        function handleEffects() {}
+        function handleEffects() {
+            if (effects.distortModelBars < 1) {
+                effects.canUndistortModel = true;
+            }
+            if (effects.maskingBars < 1 && effects.masking === true) {
+                effects.masking = false;
+                setTimeout(function () {
+                    undoScreenChange();
+                }, 2000);
+            }
+        }
 
         //add more variety for section changes
         function getSectionEffect(maxRandom) {
             var random = utils.getRandomInt(maxRandom);
+            // random = 0;
             switch (random) {
                 case 0:
                 case 1:
-                    if (effects.previous !== 'glitch') {
-                        console.log('glitch');
-                        totalGlitch();
-                        if (utils.getRandomInt(2) === 0) {
-                            totalFader();
-                        }
-                        effects.previous = 'glitch';
-                    } else {
-                        getSectionEffect(10);
-                    }
+                    if (effects.previous === 'glitch')
+                        return getSectionEffect(10);
 
+                    console.log('glitch');
+                    totalGlitch();
+                    if (utils.getRandomInt(2) === 0) totalFader();
+                    effects.previous = 'glitch';
                     break;
 
                 case 2:
@@ -731,7 +738,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 case 6:
                     console.log('pivot');
 
-                    if (effects.setAnalglyphEffect !== 'none') {
+                    if (effects.renderMode !== 'none') {
                         console.log('none and maybe fader');
                         totalNone();
                         totalGlitch();
@@ -740,7 +747,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                         }
                     } else {
                         console.log('analglyph');
-                        effects.setAnalglyphEffect = 'analglyph';
+                        effects.renderMode = 'analglyph';
                         totalFader();
                     }
                     effects.previous = 'pivot';
@@ -755,7 +762,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     } else {
                         getSectionEffect(10);
                     }
-
                     break;
 
                 case 8:
@@ -763,8 +769,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     if (effects.previous !== 'bigScreen') {
                         console.log('bigScreen');
                         var bigScreenInterval;
-                        effects.allowGlitchReset = false;
-                        effects.allowGlitchBars = 4;
+                        effects.canUndistortModel = false;
+                        effects.distortModelBars = 4;
                         if (trackData.barsStart[barCounter + 4]) {
                             bigScreenInterval =
                                 trackData.barsStart[barCounter + 4] -
@@ -796,7 +802,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                             totalGlitch();
                             undoScreenChange();
                         }, bigScreenInterval);
-                        previous = 'bigScreen';
+                        effects.previous = 'bigScreen';
                     } else {
                         getSectionEffect(10);
                     }
@@ -819,7 +825,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             var random = utils.getRandomInt(2);
             splitScreen(sceneInfoArray[0], sceneInfoArray[1]);
             console.log('glitched');
-            effects.storedEffect = effects.setAnalglyphEffect;
+            effects.storedEffect = effects.renderMode;
             if (effects.storedEffect === 'effect') {
                 if (random === 0) {
                     effects.storedEffect = 'analglyph';
@@ -829,11 +835,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
             console.log('effects.storedEffect', effects.storedEffect);
             sceneInfo2.beatLineMaterial.lineWidth = 20;
-            effects.setAnalglyphEffect = 'effect';
+            effects.renderMode = 'effect';
             effects.effectType = 'glitch';
 
             setTimeout(function () {
-                effects.setAnalglyphEffect = effects.storedEffect;
+                effects.renderMode = effects.storedEffect;
                 visuals.glitchPass.enabled = false;
                 sceneInfo2.beatLineMaterial.lineWidth = 1.8;
                 undoScreenChange();
@@ -867,18 +873,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 totalFader();
             }
 
-            effects.setAnalglyphEffect = 'effect';
+            effects.renderMode = 'effect';
             effects.effectType = 'film';
 
             setTimeout(function () {
-                effects.setAnalglyphEffect = 'analglyph';
+                effects.renderMode = 'analglyph';
                 visuals.filmPass.enabled = false;
                 visuals.dotScreenPass.enabled = false;
             }, totalFilmDuration);
         }
 
         function totalNone() {
-            effects.setAnalglyphEffect = 'none';
+            effects.renderMode = 'none';
             effects.effectType = 'film';
         }
 
@@ -1034,7 +1040,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 object.geometry.verticesNeedUpdate = true;
             }
-            if (effects.allowGlitchReset === true) {
+            if (effects.canUndistortModel === true) {
                 setTimeout(function () {
                     unDistortModel(object);
                 }, 100);
@@ -1199,7 +1205,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }
             } else {
                 // rest of scene render
-                switch (effects.setAnalglyphEffect) {
+                switch (effects.renderMode) {
                     case 'none':
                         visuals.renderer.render(scene, camera);
                         break;
@@ -1242,6 +1248,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         function render() {
+            handleEffects();
             sceneInfo1.animation();
             sceneInfo2.animation();
             sceneInfo3.animation();
