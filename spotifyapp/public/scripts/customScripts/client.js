@@ -245,7 +245,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         function setupScene3() {
-            //Pen
             const sceneInfo = makeScene(document.querySelector('#neoline'));
 
             var renderPass3 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
@@ -253,6 +252,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             visuals.composer3.addPass(visuals.glitchPass);
             visuals.composer3.addPass(visuals.filmPass);
 
+            //Pen
             const radius = 0.02;
             const widthSegments = 1;
             const heightSegments = 1;
@@ -269,13 +269,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
             pen.position.x = 0;
             pen.position.y = 0;
-            //sceneInfo.scene.add(pen);
             sceneInfo.pen = pen;
 
+            //Plane
             var planeWidth = 1.5;
             var planeHeight = 1.5;
 
-            //Plane
             var planeGeometry = new THREE.PlaneGeometry(
                 planeWidth,
                 planeHeight,
@@ -284,12 +283,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             );
             var planeMaterial = new THREE.MeshBasicMaterial();
             var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+
             sceneInfo.planeGeometry = planeGeometry;
             sceneInfo.planeMaterial = planeMaterial;
             sceneInfo.plane = plane;
             sceneInfo.planeWidth = planeWidth;
             sceneInfo.planeHeight = planeHeight;
-            //sceneInfo.scene.add(plane);
             plane.material.wireframe = true;
             plane.rotation.set(0, 0, 0);
 
@@ -339,20 +338,52 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 plane.position.z = squaresArray[sceneBarCount][0].z - 0.01;
                 paragraphArray.push(plane);
                 sceneInfo.scene.add(plane);
-                var segColorIndex =
-                    timbreSum1 % 2 === 0 ? planeMaterialRed : planeMaterialBlue;
-                var planeGeometry = new THREE.PlaneBufferGeometry(
-                    sceneInfo.boxWidth,
-                    sceneInfo.boxWidth
+            }
+
+            function addPointToStroke() {
+                sceneInfo.neoLinePoints.push(
+                    new THREE.Vector2(
+                        squaresArray[sceneBarCount][0].x +
+                            timbreSum1 * boxDivisions +
+                            sceneInfo.boxWidth / 2,
+                        squaresArray[sceneBarCount][0].y +
+                            (timbreSum2 * boxDivisions - sceneInfo.boxWidth / 2)
+                    )
                 );
-                var plane = new THREE.Mesh(planeGeometry, segColorIndex);
-                plane.position.x =
-                    squaresArray[sceneBarCount][0].x + sceneInfo.boxWidth / 2;
-                plane.position.y =
-                    squaresArray[sceneBarCount][0].y - sceneInfo.boxWidth / 2;
-                plane.position.z = squaresArray[sceneBarCount][0].z - 0.01;
-                paragraphArray.push(plane);
-                sceneInfo.scene.add(plane);
+
+                strokePoints++;
+            }
+
+            function addStrokeToChar() {
+                if (timbreSum1 % 2 === 0) {
+                    //console.log("line")
+                    var geometry = new THREE.BufferGeometry().setFromPoints(
+                        sceneInfo.neoLinePoints
+                    );
+                    var material = new THREE.LineBasicMaterial({
+                        color: 'white',
+                    });
+
+                    var line = new THREE.Line(geometry, material);
+
+                    neoLineArray.push(line);
+                    paragraphArray.push(line);
+                    geometry.dispose();
+                } else {
+                    var curve = new THREE.SplineCurve(sceneInfo.neoLinePoints);
+                    var points = curve.getPoints(50);
+                    var geometry = new THREE.BufferGeometry().setFromPoints(
+                        points
+                    );
+                    var splineObject = new THREE.Line(geometry, material);
+                    neoLineArray.push(splineObject);
+                    paragraphArray.push(splineObject);
+                    geometry.dispose();
+                }
+                // need to ensure that these points are being cleaned up properly after every 3
+                sceneInfo.neoLinePoints.shift();
+                sceneInfo.neoLinePoints.shift();
+                strokePoints = 0;
             }
 
             sceneInfo.resetParagraph = function (newDimension) {
@@ -467,17 +498,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                     sceneInfo.neoLinePoints = [];
                     boxDivisions = sceneInfo.boxWidth / 7;
-                    if (
-                        squaresArray[sceneBarCount] &&
-                        squaresArray[sceneBarCount]
-                    ) {
-                        sceneInfo.pen.position.x =
-                            squaresArray[sceneBarCount][0].x +
-                            sceneInfo.boxWidth / 2;
-                        sceneInfo.pen.position.y =
-                            squaresArray[sceneBarCount][0].y -
-                            sceneInfo.boxWidth / 2;
-                    }
+
+                    sceneInfo.pen.position.x =
+                        squaresArray[sceneBarCount][0].x +
+                        sceneInfo.boxWidth / 2;
+                    sceneInfo.pen.position.y =
+                        squaresArray[sceneBarCount][0].y -
+                        sceneInfo.boxWidth / 2;
 
                     for (var i = 0; i < neoLineArray.length; i++) {
                         sceneInfo.scene.add(neoLineArray[i]);
@@ -508,56 +535,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 sceneBeatCount = beatCounter;
 
-                if (
-                    sceneSegCount !== segmentCounter &&
-                    squaresArray[sceneBarCount]
-                ) {
+                if (sceneSegCount !== segmentCounter) {
+                    addPointToStroke();
                     sceneSegCount = segmentCounter;
-                    sceneInfo.neoLinePoints.push(
-                        new THREE.Vector2(
-                            squaresArray[sceneBarCount][0].x +
-                                timbreSum1 * boxDivisions +
-                                sceneInfo.boxWidth / 2,
-                            squaresArray[sceneBarCount][0].y +
-                                (timbreSum2 * boxDivisions -
-                                    sceneInfo.boxWidth / 2)
-                        )
-                    );
-
-                    twoCounter++;
                 }
-                if (twoCounter === 3) {
-                    if (timbreSum1 % 2 === 0) {
-                        //console.log("line")
-                        var geometry = new THREE.BufferGeometry().setFromPoints(
-                            sceneInfo.neoLinePoints
-                        );
-                        var material = new THREE.LineBasicMaterial({
-                            color: 'white',
-                        });
 
-                        var line = new THREE.Line(geometry, material);
-
-                        neoLineArray.push(line);
-                        paragraphArray.push(line);
-                        geometry.dispose();
-                    } else {
-                        var curve = new THREE.SplineCurve(
-                            sceneInfo.neoLinePoints
-                        );
-                        var points = curve.getPoints(50);
-                        var geometry = new THREE.BufferGeometry().setFromPoints(
-                            points
-                        );
-                        var splineObject = new THREE.Line(geometry, material);
-                        neoLineArray.push(splineObject);
-                        paragraphArray.push(splineObject);
-                        geometry.dispose();
-                    }
-                    // need to ensure that these points are being cleaned up properly after every 3
-                    sceneInfo.neoLinePoints.shift();
-                    sceneInfo.neoLinePoints.shift();
-                    twoCounter = 0;
+                if (strokePoints === 3) {
+                    addStrokeToChar();
                 }
             };
 
@@ -810,7 +794,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        var twoCounter = 0;
+        var strokePoints = 0;
 
         var boxDivisions;
 
