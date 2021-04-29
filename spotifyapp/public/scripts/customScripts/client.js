@@ -25,21 +25,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             visuals.composer3.addPass(visuals.glitchPass);
             visuals.composer3.addPass(visuals.filmPass);
 
-            //Pen
-            const radius = 0.02;
-            const widthSegments = 1;
-            const heightSegments = 1;
-            const geometry = new THREE.SphereBufferGeometry(
-                radius,
-                widthSegments,
-                heightSegments
-            );
-            const material = new THREE.MeshPhongMaterial({
-                color: 'white',
-                flatShading: true,
-            });
-            const pen = new THREE.Mesh(geometry, material);
-
             //Plane
             var planeWidth = 1.5;
             var planeHeight = 1.5;
@@ -67,17 +52,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             //Line
             var charPoints = [];
             var strokesArray = [];
-            var neoLineMaterial = new THREE.LineBasicMaterial({
-                color: 'white',
-            });
-            var neoLineGeometry = new THREE.BufferGeometry().setFromPoints(
-                charPoints
-            );
-            var neoLine = new THREE.Line(neoLineGeometry, neoLineMaterial);
-            sceneInfo.neoLine = neoLine;
 
             sceneInfo.charPoints = charPoints;
-            sceneInfo.scene.add(neoLine);
 
             let sceneBarCount = 0;
             let sceneBeatCount = 0;
@@ -113,7 +89,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 paragraphArray.push(plane);
                 sceneInfo.scene.add(plane);
             }
-
+            sceneInfo.addPointToStroke = addPointToStroke;
             function addPointToStroke() {
                 let currentSquare = squaresArray[sceneBarCount][0];
 
@@ -128,6 +104,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     )
                 );
                 strokePoints++;
+
+                if (strokePoints === 3) {
+                    addStrokeToChar();
+                }
             }
 
             function addStrokeToChar() {
@@ -259,11 +239,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 if (sceneBarCount !== barCounter) {
                     // effects.allowGlitchReset = true
                     sceneBarCount = barCounter;
-
+                    // I think that this actually targets the bar before
                     if (
                         trackData.sectionNearestBarStart[sectionCounter + 1] ===
                         trackData.barsStart[barCounter]
                     ) {
+                        console.log('new section 1');
                         getSectionEffect(10);
                         addSectionPlane();
                     }
@@ -294,15 +275,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }
 
                 sceneBeatCount = beatCounter;
-
-                if (sceneSegCount !== segmentCounter) {
-                    addPointToStroke();
-                    sceneSegCount = segmentCounter;
-                }
-
-                if (strokePoints === 3) {
-                    addStrokeToChar();
-                }
             };
 
             return sceneInfo;
@@ -320,16 +292,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             effectType: 'film',
             checkForUndoFader: false,
             glitchTheBar: false,
-            storedCounters: {
-                beats: 0,
-                bars: 0,
-                sections: 0,
-            },
         };
 
         function handleEffects() {
             if (effects.distortModelBars < 1) {
                 effects.canUndistortModel = true;
+            }
+            if (effects.checkForUndoFader === true) {
+                undoFader(analglyphBarLength);
             }
             if (effects.maskingBars < 1 && effects.masking === true) {
                 effects.masking = false;
@@ -338,10 +308,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 }, 2000);
             }
 
-            if (effects.storedCounters.bars !== barCounter) {
-                console.log('new bar');
-                effects.storedCounters.bars = barCounter;
+            if (newHits.beat) {
+                newHits.beat = false;
 
+                sceneInfo2.physics.beatMomentum =
+                    sceneInfo2.physics.beatMomentum === -100 ? 100 : -100;
+            }
+            if (newHits.bar) {
+                newHits.bar = false;
                 effects.distortModelBars--;
                 effects.maskingBars--;
                 distortModel(sceneInfo4.plane);
@@ -352,6 +326,21 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 if (utils.getRandomInt(4) === 0) {
                     effects.glitchTheBar = 4;
                 }
+            }
+            if (newHits.segment) {
+                newHits.segment = false;
+
+                // Update Scene 1 Backrow
+                sceneInfo1.planeBackrow =
+                    trackData.segments[segmentCounter]['pitches'];
+
+                calcTimbreSums();
+                sceneInfo3.addPointToStroke();
+            }
+
+            if (newHits.section) {
+                newHits.section = false;
+                console.log('new section 2');
             }
         }
 
@@ -868,10 +857,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             sceneInfo2.animation();
             sceneInfo3.animation();
 
-            if (effects.checkForUndoFader === true) {
-                undoFader(analglyphBarLength);
-            }
-
             sceneInfo4.animation();
 
             resizeRendererToDisplaySize(visuals.renderer);
@@ -912,33 +897,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     var tatumCounter = 0;
     var segmentCounter = 0;
 
-    // Might be able to implement this object but I need a better understanding of how the divisionCounters are currently used first
-
-    const divisionCounters = {
-        section: 0,
-        bar: 0,
-        beat: 0,
-        tatum: 0,
-        segment: 0,
-        _findNextDivision(trackDataDivision) {
-            var i = 0;
-            while (i < trackDataDivision.length) {
-                if (trackDataDivision[i] > trackPosition) {
-                    return i;
-                }
-                i++;
-            }
-        },
-        updateDivisionCounters() {
-            this.segment = this._findNextDivision(trackData.segmentsStart);
-            this.tatum = findNextDivision(trackData.tatumsStart);
-            this.beat = findNextDivision(trackData.beatsStart);
-            this.bar = findNextDivision(trackData.barsStart);
-            this.section =
-                findNextDivision(trackData.sectionNearestBarStart) - 1;
-        },
-    };
-
     function findNextDivision(divisionNameStart, divisionCounter) {
         var i = 0;
         while (i < divisionNameStart.length) {
@@ -964,6 +922,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             1;
     }
 
+    const newHits = {
+        beat: false,
+        section: false,
+        bar: false,
+        tatum: false,
+        segment: false,
+    };
+
     function checkForHits() {
         var syncCompensation = 0;
 
@@ -971,15 +937,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             elapsedTime + elapsedMilliseconds >=
             trackData.beatsStart[beatCounter] - syncCompensation
         ) {
-            //console.log("New beat")
-            if (sceneInfo2.physics.beatMomentum === -100) {
-                //console.log("Beat")
-                sceneInfo2.physics.beatMomentum = 100;
-            } else {
-                sceneInfo2.physics.beatMomentum = -100;
-                //console.log("Boop")
-            }
-
+            newHits.beat = true;
             beatCounter++;
         }
 
@@ -988,18 +946,21 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             trackData.sectionNearestBarStart[sectionCounter + 1] -
                 syncCompensation
         ) {
+            newHits.section = true;
             sectionCounter++;
         }
         if (
             elapsedTime + elapsedMilliseconds >=
             trackData.barsStart[barCounter] - syncCompensation
         ) {
+            newHits.bar = true;
             barCounter++;
         }
         if (
             elapsedTime + elapsedMilliseconds >=
             trackData.tatumsStart[tatumCounter] - syncCompensation
         ) {
+            newHits.tatum = true;
             tatumCounter++;
         }
 
@@ -1007,52 +968,47 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             elapsedTime + elapsedMilliseconds >=
             trackData.segmentsStart[segmentCounter] - syncCompensation
         ) {
-            sceneInfo1.planeBackrow =
-                trackData.segments[segmentCounter]['pitches'];
-            var timbreArray = trackData.segments[segmentCounter].timbre;
-            var firstHalf = [];
-            var secondHalf = [];
-            for (var i = 0; i < timbreArray.length; i++) {
-                if (i < 6) {
-                    firstHalf.push(timbreArray[i]);
-                } else {
-                    secondHalf.push(timbreArray[i]);
-                }
-            }
-
-            sceneInfo3.timbreSum1 = firstHalf.reduce(
-                (acc, val) => (acc *= val)
-            );
-            sceneInfo3.timbreSum2 = secondHalf.reduce(
-                (acc, val) => (acc *= val)
-            );
-            if (sceneInfo3.timbreSum1 > 0) {
-                var negative = false;
-            } else {
-                var negative = true;
-            }
-            sceneInfo3.timbreSum1 = sceneInfo3.timbreSum1.toString();
-            sceneInfo3.timbreSum1 = negative
-                ? parseInt(sceneInfo3.timbreSum1[1]) * -1
-                : parseInt(sceneInfo3.timbreSum1[1]);
-
-            if (sceneInfo3.timbreSum2 > 0) {
-                var negative = false;
-            } else {
-                var negative = true;
-            }
-            sceneInfo3.timbreSum2 = sceneInfo3.timbreSum2.toString();
-            sceneInfo3.timbreSum2 = negative
-                ? parseInt(sceneInfo3.timbreSum2[1]) * -1
-                : parseInt(sceneInfo3.timbreSum2[1]);
-
-            sceneInfo3.timbreSum1 = Math.ceil(sceneInfo3.timbreSum1 * 0.4);
-            sceneInfo3.timbreSum2 = Math.ceil(sceneInfo3.timbreSum2 * 0.4);
-
+            newHits.segment = true;
             segmentCounter++;
         }
     }
+    function calcTimbreSums() {
+        var timbreArray = trackData.segments[segmentCounter].timbre;
+        var firstHalf = [];
+        var secondHalf = [];
+        for (var i = 0; i < timbreArray.length; i++) {
+            if (i < 6) {
+                firstHalf.push(timbreArray[i]);
+            } else {
+                secondHalf.push(timbreArray[i]);
+            }
+        }
 
+        sceneInfo3.timbreSum1 = firstHalf.reduce((acc, val) => (acc *= val));
+        sceneInfo3.timbreSum2 = secondHalf.reduce((acc, val) => (acc *= val));
+        if (sceneInfo3.timbreSum1 > 0) {
+            var negative = false;
+        } else {
+            var negative = true;
+        }
+        sceneInfo3.timbreSum1 = sceneInfo3.timbreSum1.toString();
+        sceneInfo3.timbreSum1 = negative
+            ? parseInt(sceneInfo3.timbreSum1[1]) * -1
+            : parseInt(sceneInfo3.timbreSum1[1]);
+
+        if (sceneInfo3.timbreSum2 > 0) {
+            var negative = false;
+        } else {
+            var negative = true;
+        }
+        sceneInfo3.timbreSum2 = sceneInfo3.timbreSum2.toString();
+        sceneInfo3.timbreSum2 = negative
+            ? parseInt(sceneInfo3.timbreSum2[1]) * -1
+            : parseInt(sceneInfo3.timbreSum2[1]);
+
+        sceneInfo3.timbreSum1 = Math.ceil(sceneInfo3.timbreSum1 * 0.4);
+        sceneInfo3.timbreSum2 = Math.ceil(sceneInfo3.timbreSum2 * 0.4);
+    }
     function getNeoDimension(bars) {
         var result;
 
