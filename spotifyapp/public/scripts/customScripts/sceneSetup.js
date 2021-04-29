@@ -69,6 +69,14 @@ function setupScene1() {
 
     var flowing = true;
 
+    function updateBackrow(arr) {
+        console.log('arr recieved');
+        sceneInfo.planeBackRow = [...arr];
+        console.log(sceneInfo.planeBackRow);
+    }
+
+    sceneInfo.updateBackrow = updateBackrow;
+
     function startPlaneFlow() {
         setInterval(function () {
             flowing = !flowing;
