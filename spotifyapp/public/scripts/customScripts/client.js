@@ -36,6 +36,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             if (newHits.song) {
                 newHits.song = false;
                 effects.checkForUndoFader = true;
+                let newDimension = getNeoDimension(trackData.bars);
+                console.log(newDimension);
+                sceneInfo3.resetParagraph(newDimension);
             }
 
             if (effects.distortModelBars < 1) {
@@ -84,7 +87,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 sceneInfo1.planeBackrow =
                     trackData.segments[segmentCounter]['pitches'];
 
-                calcTimbreSums();
+                [
+                    sceneInfo3.timbreSum1,
+                    sceneInfo3.timbreSum2,
+                ] = calcTimbreSums();
                 sceneInfo3.addPointToStroke(barCounter);
             }
 
@@ -685,16 +691,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
     const newHits = {
-        song: false,
-        beat: false,
-        section: false,
-        bar: false,
-        tatum: false,
-        segment: false,
-        newSectOnNextBeat: false,
-        newSectOnNextBar: false,
-        newSectBeatHandled: false,
-        newSectBarHandled: false,
+        song: true,
+        beat: true,
+        section: true,
+        bar: true,
+        tatum: true,
+        segment: true,
+        newSectOnNextBeat: true,
+        newSectOnNextBar: true,
+        newSectBeatHandled: true,
+        newSectBarHandled: true,
     };
 
     function checkForHits() {
@@ -738,6 +744,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             trackData.segmentsStart[segmentCounter] - syncCompensation
         ) {
             newHits.segment = true;
+            console.log(segmentCounter);
+
             segmentCounter++;
         }
 
@@ -759,6 +767,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
     }
     function calcTimbreSums() {
+        let timbreSum1;
+        let timbreSum2;
         var timbreArray = trackData.segments[segmentCounter].timbre;
         var firstHalf = [];
         var secondHalf = [];
@@ -770,30 +780,32 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             }
         }
 
-        sceneInfo3.timbreSum1 = firstHalf.reduce((acc, val) => (acc *= val));
-        sceneInfo3.timbreSum2 = secondHalf.reduce((acc, val) => (acc *= val));
-        if (sceneInfo3.timbreSum1 > 0) {
+        timbreSum1 = firstHalf.reduce((acc, val) => (acc *= val));
+        timbreSum2 = secondHalf.reduce((acc, val) => (acc *= val));
+        if (timbreSum1 > 0) {
             var negative = false;
         } else {
             var negative = true;
         }
-        sceneInfo3.timbreSum1 = sceneInfo3.timbreSum1.toString();
-        sceneInfo3.timbreSum1 = negative
-            ? parseInt(sceneInfo3.timbreSum1[1]) * -1
-            : parseInt(sceneInfo3.timbreSum1[1]);
+        timbreSum1 = timbreSum1.toString();
+        timbreSum1 = negative
+            ? parseInt(timbreSum1[1]) * -1
+            : parseInt(timbreSum1[1]);
 
-        if (sceneInfo3.timbreSum2 > 0) {
+        if (timbreSum2 > 0) {
             var negative = false;
         } else {
             var negative = true;
         }
-        sceneInfo3.timbreSum2 = sceneInfo3.timbreSum2.toString();
-        sceneInfo3.timbreSum2 = negative
-            ? parseInt(sceneInfo3.timbreSum2[1]) * -1
-            : parseInt(sceneInfo3.timbreSum2[1]);
+        timbreSum2 = timbreSum2.toString();
+        timbreSum2 = negative
+            ? parseInt(timbreSum2[1]) * -1
+            : parseInt(timbreSum2[1]);
 
-        sceneInfo3.timbreSum1 = Math.ceil(sceneInfo3.timbreSum1 * 0.4);
-        sceneInfo3.timbreSum2 = Math.ceil(sceneInfo3.timbreSum2 * 0.4);
+        timbreSum1 = Math.ceil(timbreSum1 * 0.4);
+        timbreSum2 = Math.ceil(timbreSum2 * 0.4);
+
+        return [timbreSum1, timbreSum2];
     }
     function getNeoDimension(bars) {
         var result;
@@ -912,9 +924,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 return trackData;
             })
             .then((trackData) => {
-                let newDimension = getNeoDimension(trackData.bars);
-                console.log(newDimension);
-                sceneInfo3.resetParagraph(newDimension);
+                console.log(trackData);
             })
             .then((res) => timerControl(state['paused']));
     }
