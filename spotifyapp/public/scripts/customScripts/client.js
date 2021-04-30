@@ -1,9 +1,8 @@
-import { RenderPass } from 'https://unpkg.com/three@0.119.1//examples/jsm/postprocessing/RenderPass.js';
 import { songData } from './songData.js';
 import {
-    makeScene,
     setupScene1,
     setupScene2,
+    setupScene3,
     setupScene4,
 } from './sceneSetup.js';
 import * as utils from './utils.js';
@@ -17,269 +16,6 @@ window.addEventListener('beforeunload', function (event) {
 
 window.onSpotifyWebPlaybackSDKReady = () => {
     function runVisuals() {
-        function setupScene3() {
-            const sceneInfo = makeScene(document.querySelector('#neoline'));
-
-            var renderPass3 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
-            visuals.composer3.addPass(renderPass3);
-            visuals.composer3.addPass(visuals.glitchPass);
-            visuals.composer3.addPass(visuals.filmPass);
-
-            //Plane
-            var planeWidth = 1.5;
-            var planeHeight = 1.5;
-
-            var planeGeometry = new THREE.PlaneGeometry(
-                planeWidth,
-                planeHeight,
-                10,
-                10
-            );
-            var planeMaterial = new THREE.MeshBasicMaterial();
-            var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-            sceneInfo.timbreSum1 = 0;
-            sceneInfo.timbreSum2 = 0;
-
-            sceneInfo.planeGeometry = planeGeometry;
-            sceneInfo.planeMaterial = planeMaterial;
-            sceneInfo.plane = plane;
-            sceneInfo.planeWidth = planeWidth;
-            sceneInfo.planeHeight = planeHeight;
-            plane.material.wireframe = true;
-            plane.rotation.set(0, 0, 0);
-
-            //Line
-            var charPoints = [];
-            var strokesArray = [];
-
-            sceneInfo.charPoints = charPoints;
-
-            let sceneBarCount = 0;
-            let sceneBeatCount = 0;
-            let sceneSegCount = 0;
-            let sceneSectionCount = 0;
-            let paragraphArray = [];
-            let maxWords = 250;
-            let squaresArray = [];
-
-            sceneInfo.paraGraphDimensions = null;
-
-            function addSectionPlane() {
-                var planeMaterialBlue = new THREE.MeshBasicMaterial({
-                    color: 'blue',
-                });
-                var planeMaterialRed = new THREE.MeshBasicMaterial({
-                    color: 'red',
-                });
-                var segColorIndex =
-                    sceneInfo.timbreSum1 % 2 === 0
-                        ? planeMaterialRed
-                        : planeMaterialBlue;
-                var planeGeometry = new THREE.PlaneBufferGeometry(
-                    sceneInfo.boxWidth,
-                    sceneInfo.boxWidth
-                );
-                var plane = new THREE.Mesh(planeGeometry, segColorIndex);
-                plane.position.x =
-                    squaresArray[sceneBarCount][0].x + sceneInfo.boxWidth / 2;
-                plane.position.y =
-                    squaresArray[sceneBarCount][0].y - sceneInfo.boxWidth / 2;
-                plane.position.z = squaresArray[sceneBarCount][0].z - 0.01;
-                paragraphArray.push(plane);
-                sceneInfo.scene.add(plane);
-            }
-            sceneInfo.addPointToStroke = addPointToStroke;
-            function addPointToStroke() {
-                let currentSquare = squaresArray[sceneBarCount][0];
-
-                sceneInfo.charPoints.push(
-                    new THREE.Vector2(
-                        currentSquare.x +
-                            sceneInfo.timbreSum1 * boxDivisions +
-                            sceneInfo.boxWidth / 2,
-                        currentSquare.y +
-                            (sceneInfo.timbreSum2 * boxDivisions -
-                                sceneInfo.boxWidth / 2)
-                    )
-                );
-                strokePoints++;
-
-                if (strokePoints === 3) {
-                    addStrokeToChar();
-                }
-            }
-
-            function addStrokeToChar() {
-                if (sceneInfo.timbreSum1 % 2 === 0) {
-                    //console.log("line")
-                    var geometry = new THREE.BufferGeometry().setFromPoints(
-                        sceneInfo.charPoints
-                    );
-                    var material = new THREE.LineBasicMaterial({
-                        color: 'white',
-                    });
-
-                    var line = new THREE.Line(geometry, material);
-
-                    strokesArray.push(line);
-                    geometry.dispose();
-                } else {
-                    var curve = new THREE.SplineCurve(sceneInfo.charPoints);
-                    var points = curve.getPoints(50);
-                    var geometry = new THREE.BufferGeometry().setFromPoints(
-                        points
-                    );
-                    var splineObject = new THREE.Line(geometry, material);
-                    strokesArray.push(splineObject);
-                    geometry.dispose();
-                }
-                // need to ensure that these points are being cleaned up properly after every 3
-                sceneInfo.charPoints.shift();
-                sceneInfo.charPoints.shift();
-                strokePoints = 0;
-            }
-            function addCharToParagraph() {
-                for (var i = 0; i < strokesArray.length; i++) {
-                    sceneInfo.scene.add(strokesArray[i]);
-                }
-
-                paragraphArray = paragraphArray.concat(strokesArray);
-
-                strokesArray = [];
-            }
-            sceneInfo.resetParagraph = function (newDimension) {
-                for (var i = 0; i < paragraphArray.length; i++) {
-                    sceneInfo.scene.remove(paragraphArray[i]);
-                }
-                strokesArray = [];
-                paragraphArray = [];
-
-                if (utils.getRandomInt(2) === 0) {
-                    faderInverted = !faderInverted;
-                    console.log('faderInverted', faderInverted);
-                    if (trackData) {
-                        totalFader();
-                    }
-                }
-
-                effects.checkForUndoFader = true;
-                sceneInfo.scene.remove(sceneInfo.plane);
-                sceneInfo.planeGeometry = new THREE.PlaneGeometry(
-                    sceneInfo.planeWidth,
-                    sceneInfo.planeHeight,
-                    newDimension,
-                    newDimension
-                );
-                sceneInfo.plane = new THREE.Mesh(
-                    sceneInfo.planeGeometry,
-                    sceneInfo.planeMaterial
-                );
-
-                var q = 0;
-                var k = 0;
-                squaresArray = [];
-                for (var i = 0; i < newDimension * newDimension; i++) {
-                    squaresArray[i] = [];
-                    if (i % newDimension === 0 && i > 0) {
-                        q++;
-                    }
-                    for (var j = 0; j < newDimension; j++) {
-                        if (j < 2) {
-                            k = 0;
-                            squaresArray[i][j] =
-                                sceneInfo.plane.geometry.vertices[i + j + q];
-                        } else {
-                            k = newDimension - 1;
-                            squaresArray[i][j] =
-                                sceneInfo.plane.geometry.vertices[
-                                    i + j + k + q
-                                ];
-                        }
-                    }
-                }
-                if (squaresArray.length === 0) {
-                    sceneInfo.boxWidth = 0;
-                } else {
-                    sceneInfo.boxWidth = Math.abs(
-                        squaresArray[0][0].x - squaresArray[0][1].x
-                    );
-                }
-            };
-
-            sceneInfo.animation = function () {
-                if (!trackData || !squaresArray) return;
-
-                if (sceneSectionCount !== sectionCounter) {
-                    console.log(sceneSectionCount, sectionCounter);
-                    neoToggle = true;
-
-                    sceneSectionCount = sectionCounter;
-
-                    sceneBeatCount = beatCounter;
-                }
-
-                if (
-                    trackData.sectionNearestBarStart[sceneSectionCount + 1] ===
-                        trackData.beatsStart[beatCounter + 1] &&
-                    neoToggle === true
-                ) {
-                    neoToggle = false;
-                    if (utils.getRandomInt(2) === 0) {
-                        console.log('glitch reset disabled');
-                        effects.canUndistortModel = false;
-                        effects.distortModelBars = 4;
-                    }
-
-                    sceneBeatCount = beatCounter;
-                }
-
-                // On each new bar
-
-                if (sceneBarCount !== barCounter) {
-                    // effects.allowGlitchReset = true
-                    sceneBarCount = barCounter;
-                    // I think that this actually targets the bar before
-                    if (
-                        trackData.sectionNearestBarStart[sectionCounter + 1] ===
-                        trackData.barsStart[barCounter]
-                    ) {
-                        console.log('new section 1');
-                        getSectionEffect(10);
-                        addSectionPlane();
-                    }
-
-                    sceneInfo.charPoints = [];
-                    boxDivisions = sceneInfo.boxWidth / 7;
-
-                    addCharToParagraph();
-                    if (paragraphArray.length > maxWords) {
-                        // console.log(paragraphArray.length - maxWords)
-                        for (
-                            var i = 0;
-                            (i = paragraphArray.length - maxWords);
-                            i++
-                        ) {
-                            sceneInfo.scene.remove(paragraphArray[0]);
-                            paragraphArray.shift();
-                        }
-                    }
-                }
-                // On each new beat decrement glitchTheBar and distort if glitchTheBar is greater than 0
-                if (
-                    sceneBeatCount !== beatCounter &&
-                    effects.glitchTheBar > 0
-                ) {
-                    effects.glitchTheBar--;
-                    distortModel(sceneInfo4.plane);
-                }
-
-                sceneBeatCount = beatCounter;
-            };
-
-            return sceneInfo;
-        }
-
         const effects = {
             previous: null,
             previousBigScreen: null,
@@ -294,7 +30,14 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             glitchTheBar: false,
         };
 
-        function handleEffects() {
+        function handleEvents() {
+            if (!trackData) return;
+
+            if (newHits.song) {
+                newHits.song = false;
+                effects.checkForUndoFader = true;
+            }
+
             if (effects.distortModelBars < 1) {
                 effects.canUndistortModel = true;
             }
@@ -313,12 +56,19 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
                 sceneInfo2.physics.beatMomentum =
                     sceneInfo2.physics.beatMomentum === -100 ? 100 : -100;
+
+                if (effects.glitchTheBar > 0) {
+                    effects.glitchTheBar--;
+                    distortModel(sceneInfo4.plane);
+                }
             }
             if (newHits.bar) {
                 newHits.bar = false;
                 effects.distortModelBars--;
                 effects.maskingBars--;
                 distortModel(sceneInfo4.plane);
+                sceneInfo3.addCharToParagraph();
+                sceneInfo3.trimParagraph();
                 if (utils.getRandomInt(4) === 0) {
                     totalFader();
                 }
@@ -335,12 +85,30 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     trackData.segments[segmentCounter]['pitches'];
 
                 calcTimbreSums();
-                sceneInfo3.addPointToStroke();
+                sceneInfo3.addPointToStroke(barCounter);
             }
 
             if (newHits.section) {
                 newHits.section = false;
-                console.log('new section 2');
+                // console.log('new section 2', Date.now());
+            }
+
+            if (newHits.newSectOnNextBeat) {
+                newHits.newSectOnNextBeat = false;
+                newHits.newSectBeatHandled = true;
+
+                if (utils.getRandomInt(2) === 0) {
+                    console.log('glitch reset disabled');
+                    effects.canUndistortModel = false;
+                    effects.distortModelBars = 4;
+                }
+            }
+            if (newHits.newSectOnNextBar) {
+                newHits.newSectOnNextBar = false;
+                newHits.newSectBarHandled = true;
+                console.log('new Section next bar 2', Date.now());
+                getSectionEffect(10);
+                sceneInfo3.addSectionPlane(barCounter);
             }
         }
 
@@ -448,12 +216,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     break;
             }
         }
-
-        var strokePoints = 0;
-
-        var boxDivisions;
-
-        var neoToggle = true;
 
         function totalGlitch() {
             var random = utils.getRandomInt(2);
@@ -852,7 +614,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         function render() {
-            handleEffects();
+            handleEvents();
             sceneInfo1.animation();
             sceneInfo2.animation();
             sceneInfo3.animation();
@@ -923,11 +685,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
     const newHits = {
+        song: false,
         beat: false,
         section: false,
         bar: false,
         tatum: false,
         segment: false,
+        newSectOnNextBeat: false,
+        newSectOnNextBar: false,
+        newSectBeatHandled: false,
+        newSectBarHandled: false,
     };
 
     function checkForHits() {
@@ -947,6 +714,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 syncCompensation
         ) {
             newHits.section = true;
+            newHits.newSectBeatHandled = false;
+            newHits.newSectBarHandled = false;
             sectionCounter++;
         }
         if (
@@ -970,6 +739,23 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         ) {
             newHits.segment = true;
             segmentCounter++;
+        }
+
+        sectionLookahead();
+    }
+
+    function sectionLookahead() {
+        const nextSectionStart =
+            trackData.sectionNearestBarStart[sectionCounter + 1];
+        const nextBeatStart = trackData.beatsStart[beatCounter + 1];
+        if (nextSectionStart === nextBeatStart && !newHits.newSectBeatHandled) {
+            newHits.newSectOnNextBeat = true;
+        }
+        if (
+            (nextSectionStart === trackData.barsStart[barCounter]) &
+            !newHits.newSectBarHandled
+        ) {
+            newHits.newSectOnNextBar = true;
         }
     }
     function calcTimbreSums() {
@@ -1111,6 +897,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         stored_track_id = currentTrackID;
         console.log('New track detected:', stored_track_id);
         console.log('Track position', trackPosition);
+        newHits.song = true;
 
         fetch('./', {
             method: 'POST',
@@ -1126,6 +913,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             })
             .then((trackData) => {
                 let newDimension = getNeoDimension(trackData.bars);
+                console.log(newDimension);
                 sceneInfo3.resetParagraph(newDimension);
             })
             .then((res) => timerControl(state['paused']));
