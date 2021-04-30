@@ -261,6 +261,203 @@ function setupScene2() {
     return sceneInfo;
 }
 
+function setupScene3() {
+    const sceneInfo = makeScene(document.querySelector('#neoline'));
+
+    var renderPass3 = new RenderPass(sceneInfo.scene, sceneInfo.camera);
+    visuals.composer3.addPass(renderPass3);
+    visuals.composer3.addPass(visuals.glitchPass);
+    visuals.composer3.addPass(visuals.filmPass);
+
+    //Plane
+    var planeWidth = 1.5;
+    var planeHeight = 1.5;
+
+    var planeGeometry = new THREE.PlaneGeometry(
+        planeWidth,
+        planeHeight,
+        10,
+        10
+    );
+    var planeMaterial = new THREE.MeshBasicMaterial();
+    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+
+    sceneInfo.timbreSum1 = 0;
+    sceneInfo.timbreSum2 = 0;
+
+    sceneInfo.planeGeometry = planeGeometry;
+    sceneInfo.planeMaterial = planeMaterial;
+    sceneInfo.plane = plane;
+    sceneInfo.planeWidth = planeWidth;
+    sceneInfo.planeHeight = planeHeight;
+    plane.material.wireframe = true;
+    plane.rotation.set(0, 0, 0);
+
+    //Line
+    var charPoints = [];
+    var strokesArray = [];
+
+    sceneInfo.charPoints = charPoints;
+
+    let paragraphArray = [];
+    let maxWords = 250;
+    let squaresArray = [];
+
+    let boxDivisions;
+    let strokePoints = 0;
+
+    sceneInfo.paraGraphDimensions = null;
+
+    sceneInfo.addSectionPlane = addSectionPlane;
+
+    function addSectionPlane(barCount) {
+        var planeMaterialBlue = new THREE.MeshBasicMaterial({
+            color: 'blue',
+        });
+        var planeMaterialRed = new THREE.MeshBasicMaterial({
+            color: 'red',
+        });
+        var segColorIndex =
+            sceneInfo.timbreSum1 % 2 === 0
+                ? planeMaterialRed
+                : planeMaterialBlue;
+        var planeGeometry = new THREE.PlaneBufferGeometry(
+            sceneInfo.boxWidth,
+            sceneInfo.boxWidth
+        );
+        var plane = new THREE.Mesh(planeGeometry, segColorIndex);
+        plane.position.x = squaresArray[barCount][0].x + sceneInfo.boxWidth / 2;
+        plane.position.y = squaresArray[barCount][0].y - sceneInfo.boxWidth / 2;
+        plane.position.z = squaresArray[barCount][0].z - 0.01;
+        paragraphArray.push(plane);
+        sceneInfo.scene.add(plane);
+    }
+    sceneInfo.trimParagraph = trimParagraph;
+    function trimParagraph() {
+        if (paragraphArray.length < maxWords) return;
+
+        for (var i = 0; (i = paragraphArray.length - maxWords); i++) {
+            sceneInfo.scene.remove(paragraphArray[0]);
+            paragraphArray.shift();
+        }
+    }
+
+    sceneInfo.addPointToStroke = addPointToStroke;
+    function addPointToStroke(barCount) {
+        let currentSquare = squaresArray[barCount][0];
+
+        sceneInfo.charPoints.push(
+            new THREE.Vector2(
+                currentSquare.x +
+                    sceneInfo.timbreSum1 * boxDivisions +
+                    sceneInfo.boxWidth / 2,
+                currentSquare.y +
+                    (sceneInfo.timbreSum2 * boxDivisions -
+                        sceneInfo.boxWidth / 2)
+            )
+        );
+        strokePoints++;
+
+        if (strokePoints === 3) {
+            addStrokeToChar();
+        }
+    }
+
+    function addStrokeToChar() {
+        if (sceneInfo.timbreSum1 % 2 === 0) {
+            //console.log("line")
+            var geometry = new THREE.BufferGeometry().setFromPoints(
+                sceneInfo.charPoints
+            );
+            var material = new THREE.LineBasicMaterial({
+                color: 'white',
+            });
+
+            var line = new THREE.Line(geometry, material);
+
+            strokesArray.push(line);
+            geometry.dispose();
+        } else {
+            var curve = new THREE.SplineCurve(sceneInfo.charPoints);
+            var points = curve.getPoints(50);
+            var geometry = new THREE.BufferGeometry().setFromPoints(points);
+            var splineObject = new THREE.Line(geometry, material);
+            strokesArray.push(splineObject);
+            geometry.dispose();
+        }
+        // need to ensure that these points are being cleaned up properly after every 3
+        sceneInfo.charPoints.shift();
+        sceneInfo.charPoints.shift();
+        strokePoints = 0;
+    }
+    sceneInfo.addCharToParagraph = addCharToParagraph;
+    function addCharToParagraph() {
+        sceneInfo.charPoints = [];
+
+        for (var i = 0; i < strokesArray.length; i++) {
+            sceneInfo.scene.add(strokesArray[i]);
+        }
+
+        paragraphArray = paragraphArray.concat(strokesArray);
+
+        strokesArray = [];
+    }
+    sceneInfo.resetParagraph = function (newDimension) {
+        for (var i = 0; i < paragraphArray.length; i++) {
+            sceneInfo.scene.remove(paragraphArray[i]);
+        }
+        strokesArray = [];
+        paragraphArray = [];
+
+        sceneInfo.scene.remove(sceneInfo.plane);
+        sceneInfo.planeGeometry = new THREE.PlaneGeometry(
+            sceneInfo.planeWidth,
+            sceneInfo.planeHeight,
+            newDimension,
+            newDimension
+        );
+        sceneInfo.plane = new THREE.Mesh(
+            sceneInfo.planeGeometry,
+            sceneInfo.planeMaterial
+        );
+
+        var q = 0;
+        var k = 0;
+        squaresArray = [];
+        for (var i = 0; i < newDimension * newDimension; i++) {
+            squaresArray[i] = [];
+            if (i % newDimension === 0 && i > 0) {
+                q++;
+            }
+            for (var j = 0; j < newDimension; j++) {
+                if (j < 2) {
+                    k = 0;
+                    squaresArray[i][j] =
+                        sceneInfo.plane.geometry.vertices[i + j + q];
+                } else {
+                    k = newDimension - 1;
+                    squaresArray[i][j] =
+                        sceneInfo.plane.geometry.vertices[i + j + k + q];
+                }
+            }
+        }
+        if (squaresArray.length === 0) {
+            sceneInfo.boxWidth = 0;
+        } else {
+            sceneInfo.boxWidth = Math.abs(
+                squaresArray[0][0].x - squaresArray[0][1].x
+            );
+        }
+        boxDivisions = sceneInfo.boxWidth / 7;
+    };
+
+    sceneInfo.animation = function () {
+        return;
+    };
+
+    return sceneInfo;
+}
+
 function setupScene4() {
     const canvas = document.querySelector('#c');
 
@@ -393,4 +590,4 @@ function setupScene4() {
     return sceneInfo;
 }
 
-export { makeScene, setupScene1, setupScene2, setupScene4 };
+export { makeScene, setupScene1, setupScene2, setupScene3, setupScene4 };
