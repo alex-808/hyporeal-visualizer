@@ -108,6 +108,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     effects.canUndistortModel = false;
                     effects.distortModelBars = 4;
                 }
+
             }
             if (newHits.newSectOnNextBar) {
                 newHits.newSectOnNextBar = false;
@@ -116,6 +117,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 getSectionEffect(10);
                 sceneInfo3.addSectionPlane(barCounter);
             }
+
         }
 
         //add more variety for section changes
