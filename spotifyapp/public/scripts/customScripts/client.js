@@ -646,10 +646,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
 
         requestAnimationFrame(render);
-        return sceneInfoArray;
     }
 
-    const [sceneInfo1, sceneInfo2, sceneInfo3, sceneInfo4] = runVisuals();
+    runVisuals();
 
     var trackPosition;
     var initialMilliseconds;
