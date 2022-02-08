@@ -29,13 +29,7 @@
 
 ## ⚙️ Running
 
-- If `dotenv` was installed during setup start with:
-  ```
-  cd spotifyapp
-  node server.js
-  ```
-- Otherwise start with:
-  ```
-  cd spotifyapp
-  CLIENT_ID=<your client id> CLIENT_SECRET=<your client secret> REDIRECT_URI=<your redirect uri> node server.js
-  ```
+- If `dotenv` was installed during setup start with:  
+  `npm run start`
+- Otherwise start with:  
+  `CLIENT_ID=<your client id> CLIENT_SECRET=<your client secret> REDIRECT_URI=<your redirect uri> npm run start`
