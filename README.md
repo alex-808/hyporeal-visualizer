@@ -24,12 +24,12 @@
 1. Run `npm install` in root directory to install dependencies
 
 2. (Optional) To make managing your environment variables simpler during
-   development it is recommended to install `dotenv` in the project and add your own .env file
+   development it is recommended to install [dotenv](https://www.npmjs.com/package/dotenv) in the project and add your own .env file
    with your own CLIENT_ID, CLIENT_SECRET and REDIRECT_URI
 
 ## ⚙️ Running
 
-- If `dotenv` was installed during setup start with:  
+- If [dotenv](https://www.npmjs.com/package/dotenv) was installed during setup start with:  
   `npm run start`
 - Otherwise start with:  
   `CLIENT_ID=<your client id> CLIENT_SECRET=<your client secret> REDIRECT_URI=<your redirect uri> npm run start`
